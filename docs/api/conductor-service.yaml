@@ -1,0 +1,35 @@
+openapi: "3.0.3"
+info:
+  title: Fleet Management - Service Conducteurs
+  version: "1.0"
+servers:
+  - url: http://localhost:8082
+paths:
+  /conducteurs:
+    get:
+      summary: Liste des conducteurs
+      responses:
+        "200":
+          description: Succès
+    post:
+      summary: Enregistrer un nouveau conducteur
+      responses:
+        "201":
+          description: Conducteur créé
+  /conducteurs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Profil d'un conducteur
+      responses:
+        "200":
+          description: Profil récupéré
+    patch:
+      summary: Mettre à jour le statut du permis
+      responses:
+        "200":
+          description: Statut mis à jour

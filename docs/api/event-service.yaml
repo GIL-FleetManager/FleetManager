@@ -1,0 +1,19 @@
+openapi: "3.0.3"
+info:
+  title: Fleet Management - Service Événements
+  version: "1.0"
+servers:
+  - url: http://localhost:8085
+paths:
+  /logs:
+    get:
+      summary: Consulter les logs d'événements
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [INFO, WARNING, CRITICAL]
+      responses:
+        "200":
+          description: Liste des événements filtrés

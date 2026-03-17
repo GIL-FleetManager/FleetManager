@@ -1,0 +1,25 @@
+openapi: '3.0.3'
+info:
+  title: Fleet Management - Service Localisation
+  version: '1.0'
+servers:
+  - url: http://localhost:8084
+paths:
+  /positions:
+    post:
+      summary: Envoyer une nouvelle coordonnée GPS
+      responses:
+        '201':
+          description: Position enregistrée
+  /positions/{vehicleId}/latest:
+    parameters:
+      - name: vehicleId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Récupérer la dernière position
+      responses:
+        '200':
+          description: Dernière position connue

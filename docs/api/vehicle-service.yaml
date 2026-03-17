@@ -1,0 +1,42 @@
+openapi: "3.0.3"
+info:
+  title: Fleet Management - Service Véhicules
+  version: "1.0"
+  description: Gestion de l'inventaire et du statut des véhicules.
+servers:
+  - url: http://localhost:8081
+paths:
+  /vehicles:
+    get:
+      summary: Liste tous les véhicules
+      responses:
+        "200":
+          description: Liste des véhicules récupérée avec succès
+    post:
+      summary: Ajouter un nouveau véhicule
+      responses:
+        "201":
+          description: Véhicule créé avec succès
+  /vehicles/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Détails d'un véhicule
+      responses:
+        "200":
+          description: Détails du véhicule récupérés
+    put:
+      summary: Modifier un véhicule
+      responses:
+        "200":
+          description: Véhicule mis à jour
+    delete:
+      summary: Supprimer un véhicule
+      responses:
+        "204":
+          description: Véhicule supprimé (pas de contenu en retour)

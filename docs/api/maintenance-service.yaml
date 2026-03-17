@@ -1,0 +1,24 @@
+openapi: "3.0.3"
+info:
+  title: Fleet Management - Service Maintenance
+  version: "1.0"
+servers:
+  - url: http://localhost:8083
+paths:
+  /interventions:
+    get:
+      summary: Historique des interventions
+      responses:
+        "200":
+          description: Liste des interventions
+    post:
+      summary: Planifier une nouvelle maintenance
+      responses:
+        "201":
+          description: Intervention planifiée
+  /techniciens:
+    get:
+      summary: Liste des techniciens disponibles
+      responses:
+        "200":
+          description: Liste des techniciens

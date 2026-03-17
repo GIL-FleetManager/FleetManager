@@ -1,0 +1,64 @@
+{
+  "project": "Fleet Management System",
+  "version": "1.0.0",
+  "environment": "Development",
+  "kafka_clusters": [
+    {
+      "broker": "localhost:9092",
+      "topics": [
+        {
+          "name": "fleet.vehicle.status",
+          "description": "Notification de changement d'état d'un véhicule (ex: disponible vers en_mission).",
+          "producer": "vehicle-service",
+          "consumers": ["event-service", "frontend-gateway"],
+          "payload_schema": {
+            "vehicle_id": "UUID",
+            "old_status": "string (enum)",
+            "new_status": "string (enum)",
+            "timestamp": "ISO-8601"
+          }
+        },
+        {
+          "name": "fleet.location.raw",
+          "description": "Flux massif de coordonnées GPS en temps réel.",
+          "producer": "localization-service",
+          "consumers": ["event-service", "maintenance-service"],
+          "payload_schema": {
+            "vehicle_id": "UUID",
+            "latitude": "double",
+            "longitude": "double",
+            "vitesse": "float",
+            "heading": "integer",
+            "timestamp": "ISO-8601"
+          }
+        },
+        {
+          "name": "fleet.maintenance.alerts",
+          "description": "Alertes générées lorsqu'un seuil de maintenance est atteint.",
+          "producer": "maintenance-service",
+          "consumers": ["event-service", "vehicle-service"],
+          "payload_schema": {
+            "vehicle_id": "UUID",
+            "alert_type": "string (OIL_CHANGE, BRAKES, TIRES)",
+            "priority": "string (LOW, MEDIUM, HIGH)",
+            "description": "string",
+            "timestamp": "ISO-8601"
+          }
+        },
+        {
+          "name": "fleet.system.logs",
+          "description": "Centralisation des journaux d'erreurs et d'activités de tous les services.",
+          "producer": "all-services",
+          "consumers": ["event-service"],
+          "payload_schema": {
+            "source_service": "string",
+            "level": "string (INFO, WARN, ERROR, CRITICAL)",
+            "message": "string",
+            "trace_id": "string (UUID)",
+            "timestamp": "ISO-8601"
+          }
+        }
+      ]
+    }
+  ]
+}
