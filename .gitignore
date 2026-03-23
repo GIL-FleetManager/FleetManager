@@ -1,2 +1,31 @@
 .42c
 .env
+.env.local
+.env.*.local
+*.env.dev
+*.env.test
+
+.docker/
+# PHP
+/services/*/vendor/
+/services/*/var/
+/services/*/public/bundles/
+/services/*/config/secrets/prod/
+/services/*/phpunit.xml
+
+# Go 
+/services/*/bin/
+/services/*/main
+/services/*/vendor/
+
+# Python
+/services/*/.venv/
+/services/*/__pycache__/
+/services/*/*.py[cod]
+/services/*/.uv/
+
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

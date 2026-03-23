@@ -1,0 +1,215 @@
+services:
+  # --- Databases ---
+  db-vehicle:
+    image: postgres:16-alpine
+    container_name: fleet-db-vehicle
+    environment:
+      POSTGRES_DB: vehicle_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_vehicle_data:/var/lib/postgresql/data
+    networks:
+      - fleet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d vehicle_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-conductor:
+    image: postgres:16-alpine
+    container_name: fleet-db-conductor
+    environment:
+      POSTGRES_DB: conductor_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_conductor_data:/var/lib/postgresql/data
+    networks:
+      - fleet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d conductor_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-maintenance:
+    image: postgres:16-alpine
+    container_name: fleet-db-maintenance
+    environment:
+      POSTGRES_DB: maintenance_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_maintenance_data:/var/lib/postgresql/data
+    networks:
+      - fleet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d maintenance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-localization:
+    image: timescale/timescaledb:latest-pg16
+    container_name: fleet-db-localization
+    environment:
+      POSTGRES_DB: localization_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - timescale_localization_data:/var/lib/postgresql/data
+    networks:
+      - fleet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d localization_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-event:
+    image: postgres:16-alpine
+    container_name: fleet-db-event
+    environment:
+      POSTGRES_DB: event_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_event_data:/var/lib/postgresql/data
+    networks:
+      - fleet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d event_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-keycloak:
+    image: postgres:16-alpine
+    container_name: fleet-db-keycloak
+    environment:
+      POSTGRES_DB: keycloak_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_keycloak_data:/var/lib/postgresql/data
+    networks:
+      - fleet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d keycloak_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- Infrastructure ---
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: fleet-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - fleet-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.5
+    container_name: fleet-keycloak
+    command: start-dev
+    ports:
+      - "8080:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db-keycloak:5432/keycloak_db
+      KC_DB_USERNAME: user
+      KC_DB_PASSWORD: password
+      KC_HOSTNAME: localhost
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+    depends_on:
+      db-keycloak:
+        condition: service_healthy
+    networks:
+      - fleet-network
+
+  # --- Services ---
+  vehicle-service:
+    build: ./services/vehicle-service
+    container_name: fleet-vehicle-service
+    ports:
+      - "8081:80"
+    depends_on:
+      db-vehicle:
+        condition: service_healthy
+    networks:
+      - fleet-network
+
+  conductor-service:
+    build: ./services/conductor-service
+    container_name: fleet-conductor-service
+    ports:
+      - "8082:80"
+    depends_on:
+      db-conductor:
+        condition: service_healthy
+    networks:
+      - fleet-network
+
+  maintenance-service:
+    build: ./services/maintenance-service
+    container_name: fleet-maintenance-service
+    ports:
+      - "8083:80"
+    depends_on:
+      db-maintenance:
+        condition: service_healthy
+    networks:
+      - fleet-network
+
+  localization-service:
+    build: ./services/localization-service
+    container_name: fleet-localization-service
+    ports:
+      - "8084:8000"
+    depends_on:
+      db-localization:
+        condition: service_healthy
+    networks:
+      - fleet-network
+
+  event-service:
+    build: ./services/event-service
+    container_name: fleet-event-service
+    ports:
+      - "8085:8000"
+    depends_on:
+      db-event:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - fleet-network
+
+networks:
+  fleet-network:
+    driver: bridge
+
+volumes:
+  postgres_vehicle_data:
+  postgres_conductor_data:
+  postgres_maintenance_data:
+  timescale_localization_data:
+  postgres_event_data:
+  postgres_keycloak_data:
