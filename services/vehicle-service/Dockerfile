@@ -21,6 +21,8 @@ WORKDIR /app
 
 RUN apk add --no-cache curl
 
+RUN install-php-extensions pdo pdo_pgsql
+
 COPY --from=builder /app /app
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
@@ -33,4 +35,5 @@ EXPOSE 80
 EXPOSE 443
 EXPOSE 443/udp
 
-CMD ["frankenphp", "php-server"]
+CMD ["frankenphp", "php-server", "--root", "/app/public"]
+
