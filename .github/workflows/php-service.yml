@@ -1,0 +1,36 @@
+name: PHP Services CI
+
+on:
+    push:
+        paths:
+            - "services/conductor-service/**"
+            - "services/maintenance-service/**"
+            - "services/vehicle-service/**"
+
+jobs:
+    test-php:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                service:
+                    [conductor-service, maintenance-service, vehicle-service]
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.4"
+                  extensions: mbstring, xml, ctype, iconv, intl, pdo_pgsql
+                  tools: composer:v2
+
+            - name: Install Dependencies
+              working-directory: ./services/${{ matrix.service }}
+              run: composer install --prefer-dist --no-progress --no-scripts
+
+            - name: Symfony Lint (Routes/Config)
+              working-directory: ./services/${{ matrix.service }}
+              run: |
+                  php bin/console lint:yaml config
+                  php bin/console lint:container
