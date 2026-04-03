@@ -2,6 +2,7 @@
 FROM dunglas/frankenphp:1-php8.4-alpine AS builder
 
 WORKDIR /app
+RUN install-php-extensions pdo_pgsql intl zip opcache
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -12,16 +13,19 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 COPY . .
 
 # Autoloader
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 # --- Stage 2: Runtime 
 FROM dunglas/frankenphp:1-php8.4-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl \
+    && install-php-extensions pdo_pgsql intl zip opcache
 
 COPY --from=builder /app /app
+
+RUN mkdir -p /app/var && chown -R www-data:www-data /app/var
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
   CMD curl -s http://localhost:80/ > /dev/null || exit 1
@@ -33,4 +37,5 @@ EXPOSE 80
 EXPOSE 443
 EXPOSE 443/udp
 
-CMD ["frankenphp", "php-server"]
+CMD ["frankenphp", "php-server", "--root", "/app/public"]
+
