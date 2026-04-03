@@ -2,7 +2,7 @@ apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaNodePool
 metadata:
   name: fleet-kafka-pool
-  namespace: database
+  namespace: fleet-manager
   labels:
     strimzi.io/cluster: fleet-kafka
 spec:
@@ -17,7 +17,7 @@ apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
   name: fleet-kafka
-  namespace: database
+  namespace: fleet-manager
   annotations:
     strimzi.io/node-pools: enabled
     strimzi.io/kraft: enabled

@@ -30,8 +30,8 @@ RUN mkdir -p /app/var && chown -R www-data:www-data /app/var
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
   CMD curl -s http://localhost:80/ > /dev/null || exit 1
 
-ENV APP_ENV=prod
-ENV APP_DEBUG=0
+ENV APP_ENV=dev
+ENV APP_DEBUG=1
 
 EXPOSE 80
 EXPOSE 443
