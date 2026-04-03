@@ -6,9 +6,18 @@ use App\Repository\VehicleRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GraphQl\Query;
+use ApiPlatform\Metadata\GraphQl\QueryCollection;
 
 #[ORM\Entity(repositoryClass: VehicleRepository::class)]
 #[ORM\Table(name: 'vehicules')]
+#[ApiResource(
+    graphQlOperations: [
+        new Query(),
+        new QueryCollection(),
+    ]
+)]
 class Vehicle
 {
 #[ORM\Id]

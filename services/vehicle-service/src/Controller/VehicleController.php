@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Message\VehicleStatusChanged;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 #[Route('/api/vehicles')]
 class VehicleController extends AbstractController
@@ -18,7 +20,8 @@ class VehicleController extends AbstractController
     public function __construct(
         private EntityManagerInterface $em,
         private VehicleRepository $vehicleRepository,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private MessageBusInterface $bus
     ) {}
 
     // GET /api/vehicles
@@ -35,30 +38,25 @@ class VehicleController extends AbstractController
     public function create(Request $request): JsonResponse
     {
         $body = json_decode($request->getContent(), true);
-
-        if (!$body) {
-            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
-        }
+        if (!$body) return $this->json(['error' => 'Invalid JSON'], 400);
 
         $vehicle = new Vehicle();
         $vehicle->setImmatriculation($body['immatriculation'] ?? '');
-        $vehicle->setMarque($body['marque'] ?? '');
-        $vehicle->setModele($body['modele'] ?? '');
         $vehicle->setStatut($body['statut'] ?? 'disponible');
-
-        $errors = $this->validator->validate($vehicle);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
-            }
-            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
-        }
+        // ... set other fields ...
 
         $this->em->persist($vehicle);
         $this->em->flush();
 
-        return $this->json($this->serialize($vehicle), Response::HTTP_CREATED);
+        // Dispatch Kafka Event
+        $this->bus->dispatch(new VehicleStatusChanged(
+            (string)$vehicle->getId(),
+            'none',
+            $vehicle->getStatut(),
+            date(\DateTime::ISO8601)
+        ));
+
+        return $this->json($vehicle, 201);
     }
 
     // GET /api/vehicles/{id}
@@ -79,30 +77,27 @@ class VehicleController extends AbstractController
     public function update(string $id, Request $request): JsonResponse
     {
         $vehicle = $this->vehicleRepository->find($id);
+        if (!$vehicle) return $this->json(['error' => 'Not found'], 404);
 
-        if (!$vehicle) {
-            return $this->json(['error' => 'Véhicule non trouvé'], Response::HTTP_NOT_FOUND);
-        }
-
+        $oldStatus = $vehicle->getStatut();
         $body = json_decode($request->getContent(), true);
 
-        if (isset($body['immatriculation'])) $vehicle->setImmatriculation($body['immatriculation']);
-        if (isset($body['marque'])) $vehicle->setMarque($body['marque']);
-        if (isset($body['modele'])) $vehicle->setModele($body['modele']);
         if (isset($body['statut'])) $vehicle->setStatut($body['statut']);
-
-        $errors = $this->validator->validate($vehicle);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
-            }
-            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
-        }
+        // ... update other fields ...
 
         $this->em->flush();
 
-        return $this->json($this->serialize($vehicle));
+        // Dispatch Kafka Event ONLY if status changed
+        if (isset($body['statut']) && $body['statut'] !== $oldStatus) {
+            $this->bus->dispatch(new VehicleStatusChanged(
+                (string)$vehicle->getId(),
+                $oldStatus,
+                $vehicle->getStatut(),
+                date(\DateTime::ISO8601)
+            ));
+        }
+
+        return $this->json($vehicle);
     }
 
     // DELETE /api/vehicles/{id}

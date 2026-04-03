@@ -419,7 +419,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         resources?: array<string, scalar|Param|null>,
  *     },
  *     messenger?: bool|array{ // Messenger configuration
- *         enabled?: bool|Param, // Default: false
+ *         enabled?: bool|Param, // Default: true
  *         routing?: array<string, string|array{ // Default: []
  *             senders?: list<scalar|Param|null>,
  *         }>,
@@ -683,28 +683,69 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         enabled?: bool|Param, // Default: false
  *     },
  * }
+ * @psalm-type EnqueueConfig = array<string, array{ // Default: []
+ *         transport?: array{ // The transport option could accept a string DSN, an array with DSN key, or null. It accept extra options. To find out what option you can set, look at connection factory constructor docblock.
+ *             dsn?: scalar|Param|null, // The MQ broker DSN. These schemes are supported: "file", "amqp", "amqps", "db2", "ibm-db2", "mssql", "sqlsrv", "mysql", "mysql2", "pgsql", "postgres", "sqlite", "sqlite3", "null", "gearman", "beanstalk", "kafka", "rdkafka", "redis", "rediss", "stomp", "sqs", "sns", "snsqs", "gps", "mongodb", "wamp", "ws", to use these "null", "kafka", "rdkafka" you have to install a package.
+ *             connection_factory_class?: scalar|Param|null, // The connection factory class should implement "Interop\Queue\ConnectionFactory" interface
+ *             factory_service?: scalar|Param|null, // The factory class should implement "Enqueue\ConnectionFactoryFactoryInterface" interface
+ *             factory_class?: scalar|Param|null, // The factory service should be a class that implements "Enqueue\ConnectionFactoryFactoryInterface" interface
+ *             ...<mixed>
+ *         },
+ *         consumption?: array{
+ *             receive_timeout?: int|Param, // the time in milliseconds queue consumer waits for a message (10000 ms by default) // Default: 10000
+ *         },
+ *         client?: array{
+ *             traceable_producer?: bool|Param, // Default: true
+ *             prefix?: scalar|Param|null, // Default: "enqueue"
+ *             separator?: scalar|Param|null, // Default: "."
+ *             app_name?: scalar|Param|null, // Default: "app"
+ *             router_topic?: scalar|Param|null, // Default: "default"
+ *             router_queue?: scalar|Param|null, // Default: "default"
+ *             router_processor?: scalar|Param|null, // Default: null
+ *             redelivered_delay_time?: int|Param, // Default: 0
+ *             default_queue?: scalar|Param|null, // Default: "default"
+ *             driver_options?: array<mixed>,
+ *         },
+ *         monitoring?: array<mixed>,
+ *         async_commands?: array<mixed>,
+ *         job?: array<mixed>,
+ *         async_events?: array<mixed>,
+ *         extensions?: array{
+ *             doctrine_ping_connection_extension?: bool|Param, // Default: false
+ *             doctrine_clear_identity_map_extension?: bool|Param, // Default: false
+ *             doctrine_odm_clear_identity_map_extension?: bool|Param, // Default: false
+ *             doctrine_closed_entity_manager_extension?: bool|Param, // Default: false
+ *             reset_services_extension?: bool|Param, // Default: false
+ *             signal_extension?: bool|Param, // Default: true
+ *             reply_extension?: bool|Param, // Default: true
+ *         },
+ *     }>
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
  *     services?: ServicesConfig,
  *     framework?: FrameworkConfig,
+ *     enqueue?: EnqueueConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
  *         services?: ServicesConfig,
  *         framework?: FrameworkConfig,
+ *         enqueue?: EnqueueConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
  *         services?: ServicesConfig,
  *         framework?: FrameworkConfig,
+ *         enqueue?: EnqueueConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
  *         services?: ServicesConfig,
  *         framework?: FrameworkConfig,
+ *         enqueue?: EnqueueConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

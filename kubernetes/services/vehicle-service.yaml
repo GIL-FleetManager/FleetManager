@@ -1,4 +1,3 @@
-# kubernetes/services/vehicle-service.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -28,21 +27,21 @@ spec:
           ports:
             - containerPort: 80
           env:
+            - name: APP_ENV
+              value: "dev"
+            - name: APP_SECRET
+              value: "739339f94f63c6ddfc01608764b4b81"
             - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: fleet-config
-                  key: DATABASE_HOST
-            - name: REDIS_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: fleet-config
-                  key: REDIS_URL
+              value: "postgresql://user:password@db-vehicle:5432/vehicle_db"
+            - name: KAFKA_URL
+              value: "kafka://fleet-kafka-kafka-bootstrap.fleet-manager.svc.cluster.local:9092"
+            - name: CORS_ALLOW_ORIGIN
+              value: "^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$"
           livenessProbe:
             httpGet:
-              path: /health
+              path: /api
               port: 80
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 10
 ---
 apiVersion: v1

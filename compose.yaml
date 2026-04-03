@@ -146,7 +146,9 @@ services:
 
   # --- Services ---
   vehicle-service:
-    build: ./services/vehicle-service
+    build:
+      context: ./services/vehicle-service
+      dockerfile: Dockerfile
     container_name: fleet-vehicle-service
     ports:
       - "8081:80"
@@ -157,7 +159,9 @@ services:
       - fleet-network
 
   conductor-service:
-    build: ./services/conductor-service
+    build:
+      context: ./services/conductor-service
+      dockerfile: Dockerfile
     container_name: fleet-conductor-service
     ports:
       - "8082:80"
@@ -168,7 +172,9 @@ services:
       - fleet-network
 
   maintenance-service:
-    build: ./services/maintenance-service
+    build:
+      context: ./services/maintenance-service
+      dockerfile: Dockerfile
     container_name: fleet-maintenance-service
     ports:
       - "8083:80"
