@@ -4,9 +4,9 @@ services:
     image: postgres:16-alpine
     container_name: fleet-db-vehicle
     environment:
-      POSTGRES_DB: vehicle_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      - APP_ENV=dev
+      - APP_SECRET=${APP_SECRET}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-vehicle:5432/fleetmanager?serverVersion=16
     volumes:
       - postgres_vehicle_data:/var/lib/postgresql/data
     networks:
@@ -20,10 +20,6 @@ services:
   db-conductor:
     image: postgres:16-alpine
     container_name: fleet-db-conductor
-    environment:
-      POSTGRES_DB: conductor_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
     volumes:
       - postgres_conductor_data:/var/lib/postgresql/data
     networks:
@@ -37,10 +33,6 @@ services:
   db-maintenance:
     image: postgres:16-alpine
     container_name: fleet-db-maintenance
-    environment:
-      POSTGRES_DB: maintenance_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
     volumes:
       - postgres_maintenance_data:/var/lib/postgresql/data
     networks:
@@ -54,10 +46,6 @@ services:
   db-localization:
     image: timescale/timescaledb:latest-pg16
     container_name: fleet-db-localization
-    environment:
-      POSTGRES_DB: localization_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
     volumes:
       - timescale_localization_data:/var/lib/postgresql/data
     networks:
@@ -71,10 +59,6 @@ services:
   db-event:
     image: postgres:16-alpine
     container_name: fleet-db-event
-    environment:
-      POSTGRES_DB: event_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
     volumes:
       - postgres_event_data:/var/lib/postgresql/data
     networks:
@@ -88,10 +72,6 @@ services:
   db-keycloak:
     image: postgres:16-alpine
     container_name: fleet-db-keycloak
-    environment:
-      POSTGRES_DB: keycloak_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
     volumes:
       - postgres_keycloak_data:/var/lib/postgresql/data
     networks:
