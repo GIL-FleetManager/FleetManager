@@ -1,11 +1,11 @@
 framework:
     messenger:
         transports:
-            kafka_transport:
-                dsn: "kafka://fleet-kafka-kafka-bootstrap.fleet-manager.svc.cluster.local:9092"
-                serializer: messenger.transport.json_serializer
+            kafka_fleet:
+                dsn: "%env(KAFKA_URL)%"
+                serializer: "messenger.transport.native_php_serializer"
                 options:
                     commit_async: true
 
         routing:
-            'App\Message\*': kafka_transport
+            'App\Message\*': kafka_fleet

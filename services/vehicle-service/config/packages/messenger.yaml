@@ -2,8 +2,8 @@ framework:
     messenger:
         transports:
             kafka_fleet:
-                dsn: "kafka://fleet-kafka-kafka-bootstrap.fleet-manager.svc.cluster.local:9092?topic[name]=fleet.vehicle.status"
-                serializer: messenger.transport.json_serializer
+                dsn: "kafka:9092"
+                serializer: "messenger.transport.native_php_serializer"
                 options:
                     commit_async: true
 

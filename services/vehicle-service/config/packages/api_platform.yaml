@@ -3,9 +3,13 @@ api_platform:
     version: "1.0.0"
     mapping:
         paths: ["%kernel.project_dir%/src/Entity"]
+    enable_swagger_ui: true
+    enable_re_doc: true
+    docs_formats:
+        jsonopenapi: ["application/vnd.openapi+json"]
+        jsonld: ["application/ld+json"]
+        html: ["text/html"]
     graphql:
         enabled: true
         graphiql:
             enabled: true
-    docs_formats:
-        openapi: ["application/vnd.openapi+yaml", "text/html"]

@@ -8,9 +8,7 @@ logger = logging.getLogger("event-service")
 
 
 async def start_consumer():
-    bootstrap_servers = (
-        "fleet-kafka-kafka-bootstrap.fleet-manager.svc.cluster.local:9092"
-    )
+    bootstrap_servers = "kafka:9092"
     topic = "fleet.vehicle.status"
 
     consumer = AIOKafkaConsumer(
@@ -18,7 +16,7 @@ async def start_consumer():
         bootstrap_servers=bootstrap_servers,
         group_id="event-service-group",
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        auto_offset_reset="earliest",  # Start from the beginning if no offset exists
+        auto_offset_reset="earliest",
     )
 
     await consumer.start()

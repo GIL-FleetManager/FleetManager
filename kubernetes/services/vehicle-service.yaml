@@ -4,7 +4,7 @@ metadata:
   name: vehicle-service
   namespace: fleet-manager
 spec:
-  replicas: 2
+  replicas: 1 # Start with 1 to make debugging easier!
   selector:
     matchLabels:
       app: vehicle-service
@@ -16,7 +16,6 @@ spec:
       containers:
         - name: vehicle-service
           image: fleetmanager-vehicle-service:latest
-          imagePullPolicy: IfNotPresent
           resources:
             requests:
               memory: "128Mi"
@@ -24,25 +23,19 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "500m"
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
-          env:
-            - name: APP_ENV
-              value: "dev"
-            - name: APP_SECRET
-              value: "739339f94f63c6ddfc01608764b4b81"
-            - name: DATABASE_URL
-              value: "postgresql://user:password@db-vehicle:5432/vehicle_db"
-            - name: KAFKA_URL
-              value: "kafka://fleet-kafka-kafka-bootstrap.fleet-manager.svc.cluster.local:9092"
-            - name: CORS_ALLOW_ORIGIN
-              value: "^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$"
-          livenessProbe:
-            httpGet:
-              path: /api
-              port: 80
-            initialDelaySeconds: 30
-            periodSeconds: 10
+          envFrom:
+            - secretRef:
+                name: vehicle-service-env
+          # livenessProbe:
+          #   httpGet:
+          #     path: /api
+          #     port: 80
+          #   initialDelaySeconds: 60
+          #   timeoutSeconds: 5
+          #   periodSeconds: 15
 ---
 apiVersion: v1
 kind: Service

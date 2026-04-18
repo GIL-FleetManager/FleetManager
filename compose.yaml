@@ -4,15 +4,15 @@ services:
     image: postgres:16-alpine
     container_name: fleet-db-vehicle
     environment:
-      - APP_ENV=dev
-      - APP_SECRET=${APP_SECRET}
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-vehicle:5432/fleetmanager?serverVersion=16
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=fleetmanager
     volumes:
       - postgres_vehicle_data:/var/lib/postgresql/data
     networks:
       - fleet-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d vehicle_db"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,12 +20,16 @@ services:
   db-conductor:
     image: postgres:16-alpine
     container_name: fleet-db-conductor
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=fleetmanager
     volumes:
       - postgres_conductor_data:/var/lib/postgresql/data
     networks:
       - fleet-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d conductor_db"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -33,12 +37,16 @@ services:
   db-maintenance:
     image: postgres:16-alpine
     container_name: fleet-db-maintenance
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=fleetmanager
     volumes:
       - postgres_maintenance_data:/var/lib/postgresql/data
     networks:
       - fleet-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d maintenance_db"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -46,12 +54,16 @@ services:
   db-localization:
     image: timescale/timescaledb:latest-pg16
     container_name: fleet-db-localization
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=fleetmanager
     volumes:
       - timescale_localization_data:/var/lib/postgresql/data
     networks:
       - fleet-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d localization_db"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -59,12 +71,16 @@ services:
   db-event:
     image: postgres:16-alpine
     container_name: fleet-db-event
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=fleetmanager
     volumes:
       - postgres_event_data:/var/lib/postgresql/data
     networks:
       - fleet-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d event_db"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -72,12 +88,16 @@ services:
   db-keycloak:
     image: postgres:16-alpine
     container_name: fleet-db-keycloak
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=keycloak_db
     volumes:
       - postgres_keycloak_data:/var/lib/postgresql/data
     networks:
       - fleet-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d keycloak_db"]
+      test: [ "CMD-SHELL", "pg_isready -U user -d keycloak_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -100,8 +120,20 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
       - fleet-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server
+            localhost:9092",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.5.5
@@ -130,6 +162,12 @@ services:
       context: ./services/vehicle-service
       dockerfile: Dockerfile
     container_name: fleet-vehicle-service
+    environment:
+      - APP_ENV=dev
+      - APP_SECRET=${APP_SECRET}
+      - CORS_ALLOW_ORIGIN=*
+      - DEFAULT_URI=${DEFAULT_URI}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-vehicle:5432/fleetmanager?serverVersion=16
     ports:
       - "8081:80"
     depends_on:
@@ -137,12 +175,25 @@ services:
         condition: service_healthy
     networks:
       - fleet-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/api" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./services/vehicle-service:/app:rw
 
   conductor-service:
     build:
       context: ./services/conductor-service
       dockerfile: Dockerfile
     container_name: fleet-conductor-service
+    environment:
+      - APP_ENV=dev
+      - APP_SECRET=${APP_SECRET}
+      - CORS_ALLOW_ORIGIN=*
+      - DEFAULT_URI=${DEFAULT_URI}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-conductor:5432/fleetmanager?serverVersion=16
     ports:
       - "8082:80"
     depends_on:
@@ -150,12 +201,25 @@ services:
         condition: service_healthy
     networks:
       - fleet-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/api" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./services/conductor-service:/app:rw
 
   maintenance-service:
     build:
       context: ./services/maintenance-service
       dockerfile: Dockerfile
     container_name: fleet-maintenance-service
+    environment:
+      - APP_ENV=dev
+      - APP_SECRET=${APP_SECRET}
+      - CORS_ALLOW_ORIGIN=*
+      - DEFAULT_URI=${DEFAULT_URI}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-maintenance:5432/fleetmanager?serverVersion=16
     ports:
       - "8083:80"
     depends_on:
@@ -163,6 +227,13 @@ services:
         condition: service_healthy
     networks:
       - fleet-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/api" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./services/maintenance-service:/app:rw
 
   localization-service:
     build: ./services/localization-service
@@ -187,6 +258,9 @@ services:
         condition: service_started
     networks:
       - fleet-network
+    volumes:
+      - ./services/event-service:/app:rw
+      - /app/.venv
 
 networks:
   fleet-network:

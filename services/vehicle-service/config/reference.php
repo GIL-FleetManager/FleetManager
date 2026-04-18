@@ -924,7 +924,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             doctrine_odm_clear_identity_map_extension?: bool|Param, // Default: false
  *             doctrine_closed_entity_manager_extension?: bool|Param, // Default: false
  *             reset_services_extension?: bool|Param, // Default: false
- *             signal_extension?: bool|Param, // Default: true
+ *             signal_extension?: bool|Param, // Default: false
  *             reply_extension?: bool|Param, // Default: true
  *         },
  *     }>

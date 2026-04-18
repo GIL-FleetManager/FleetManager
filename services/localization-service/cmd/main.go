@@ -22,7 +22,7 @@ type GpsPoint struct {
 func main() {
 	e := echo.New()
 
-	broker := "fleet-kafka-kafka-bootstrap.fleet-manager.svc.cluster.local:9092"
+	broker := "kafka:9092"
 	topic := "fleet.location.raw"
 
 	writer := &kafka.Writer{
@@ -32,6 +32,7 @@ func main() {
 	}
 	defer writer.Close()
 
+	// Background GPS Firehose
 	go func() {
 		log.Printf("Starting GPS Firehose to %s", topic)
 		for {
@@ -53,14 +54,24 @@ func main() {
 
 			if err != nil {
 				log.Printf("Kafka Error: %v", err)
+			} else {
+				log.Printf("✔ Sent GPS point for vehicle %s", point.VehicleID)
 			}
 
 			time.Sleep(2 * time.Second)
 		}
 	}()
 
+	e.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"status":  "healthy",
+			"service": "localisation-service",
+			"message": "Localisation service is healthy and streaming to Kafka",
+		})
+	})
+
 	e.GET("/health", func(c echo.Context) error {
-		return c.String(http.StatusOK, "OK")
+		return c.String(http.StatusOK, "Localisation service is healthy")
 	})
 
 	log.Fatal(e.Start(":8000"))

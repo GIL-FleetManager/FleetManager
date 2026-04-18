@@ -26,17 +26,9 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 80
-          env:
-            - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: fleet-config
-                  key: DATABASE_HOST
-            - name: REDIS_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: fleet-config
-                  key: REDIS_URL
+          envFrom:
+            - secretRef:
+                name: vehicle-service-env
           livenessProbe:
             httpGet:
               path: /health
