@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
+	_ "github.com/GIL-FleetManager/FleetManager/docs"
 	"github.com/labstack/echo/v4"
 	"github.com/segmentio/kafka-go"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 type GpsPoint struct {
@@ -19,6 +22,13 @@ type GpsPoint struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+var swaggerJSON []byte
+
+// @title Localization Service API
+// @version 1.0
+// @description GPS Firehose for the FleetManager project.
+// @host localhost:8084
+// @BasePath /
 func main() {
 	e := echo.New()
 
@@ -26,9 +36,11 @@ func main() {
 	topic := "fleet.location.raw"
 
 	writer := &kafka.Writer{
-		Addr:     kafka.TCP(broker),
-		Topic:    topic,
-		Balancer: &kafka.LeastBytes{},
+		Addr:                   kafka.TCP(broker),
+		Topic:                  topic,
+		Balancer:               &kafka.LeastBytes{},
+		AllowAutoTopicCreation: true,
+		Async:                  false,
 	}
 	defer writer.Close()
 
@@ -57,22 +69,48 @@ func main() {
 			} else {
 				log.Printf("✔ Sent GPS point for vehicle %s", point.VehicleID)
 			}
-
 			time.Sleep(2 * time.Second)
 		}
 	}()
 
-	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"status":  "healthy",
-			"service": "localisation-service",
-			"message": "Localisation service is healthy and streaming to Kafka",
-		})
+	// --- ROUTES ---
+	e.GET("/api", func(c echo.Context) error {
+		return c.Redirect(http.StatusMovedPermanently, "/api/index.html")
 	})
 
-	e.GET("/health", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Localisation service is healthy")
+	e.GET("/api/doc.json", func(c echo.Context) error {
+		return c.JSONBlob(http.StatusOK, swaggerJSON)
 	})
+
+	e.GET("/api/*", echoSwagger.WrapHandler)
+
+	e.GET("/", RootHandler)
+	e.GET("/health", HealthHandler)
 
 	log.Fatal(e.Start(":8000"))
+}
+
+// RootHandler godoc
+// @Summary      Service Status
+// @Description  Get general information about the service
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  map[string]string
+// @Router       / [get]
+func RootHandler(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]string{
+		"status":  "healthy",
+		"service": "localisation-service",
+	})
+}
+
+// HealthHandler godoc
+// @Summary      Health Check
+// @Description  Check if the service is alive
+// @Tags         system
+// @Produce      plain
+// @Success      200  {string}  string "Localisation service is healthy"
+// @Router       /health [get]
+func HealthHandler(c echo.Context) error {
+	return c.String(http.StatusOK, "Localisation service is healthy")
 }

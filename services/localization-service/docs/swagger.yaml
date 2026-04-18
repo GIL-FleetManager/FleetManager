@@ -1,0 +1,37 @@
+basePath: /
+host: localhost:8084
+info:
+  contact: {}
+  description: GPS Firehose for the FleetManager project.
+  title: Localization Service API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Get general information about the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Service Status
+      tags:
+      - system
+  /health:
+    get:
+      description: Check if the service is alive
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Localisation service is healthy
+          schema:
+            type: string
+      summary: Health Check
+      tags:
+      - system
+swagger: "2.0"
