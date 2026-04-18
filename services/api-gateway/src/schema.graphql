@@ -1,0 +1,18 @@
+type Vehicle {
+  id: ID!
+  model: String
+  plateNumber: String
+  location: GpsPoint
+}
+
+type GpsPoint {
+  latitude: Float
+  longitude: Float
+  speed: Float
+  timestamp: String
+}
+
+type Query {
+  getVehicle(id: ID!): Vehicle
+  getAllVehicles: [Vehicle]
+}

@@ -21,12 +21,24 @@ async def lifespan(app: FastAPI):
         print("Consumer stopped.")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Fleet Event Service",
+    description="Service de traitement des événements Kafka pour la flotte.",
+    version="1.0.0",
+    docs_url="/api",
+    openapi_url="/api/openapi.json",
+    lifespan=lifespan,
+)
 
 
 @app.get("/")
 async def root():
-    return {"status": "Event Service is healthy"}
+    return {"service": "Event Service", "status": "Healthy", "documentation": "/api"}
+
+
+@app.get("/health")
+async def health():
+    return {"status": "Event service is healthy"}
 
 
 @app.post("/logs")

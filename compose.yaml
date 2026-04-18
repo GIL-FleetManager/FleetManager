@@ -262,6 +262,20 @@ services:
       - ./services/event-service:/app:rw
       - /app/.venv
 
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: fleet-api-gateway
+    ports:
+      - "8088:8000"
+    environment:
+      - VEHICLE_SERVICE_URL=http://fleet-vehicle-service:80
+      - LOCALIZATION_SERVICE_URL=http://fleet-localization-service:8000
+    depends_on:
+      - vehicle-service
+      - localization-service
+    networks:
+      - fleet-network
+
 networks:
   fleet-network:
     driver: bridge
