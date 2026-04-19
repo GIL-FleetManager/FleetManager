@@ -4,9 +4,12 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const jwksClient = require("jwks-rsa");
 
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://fleet-keycloak:8080";
+
 const client = jwksClient({
-  jwksUri:
-    "http://fleet-keycloak:8080/realms/fleet-manager/protocol/openid-connect/certs",
+  jwksUri: `${KEYCLOAK_URL}/realms/fleet-manager/protocol/openid-connect/certs`,
+  requestHeaders: {},
+  timeout: 30000,
 });
 
 function getKey(header, callback) {
@@ -92,12 +95,27 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   context: async ({ req }) => {
-    const token = req.headers.authorization || "";
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : authHeader;
+
     if (!token) throw new AuthenticationError("You must be logged in");
 
     return new Promise((resolve, reject) => {
-      jwt.verify(token.replace("Bearer ", ""), getKey, {}, (err, decoded) => {
-        if (err) return reject(new AuthenticationError("Invalid Token"));
+      const options = {
+        algorithms: ["RS256"],
+        ignoreIssuer: true,
+        ignoreAudience: true,
+      };
+
+      jwt.verify(token, getKey, options, (err, decoded) => {
+        if (err) {
+          console.error("DEBUG - JWT Error:", err.message);
+          return reject(
+            new AuthenticationError(`Invalid Token: ${err.message}`),
+          );
+        }
         resolve({ user: decoded });
       });
     });

@@ -23,19 +23,18 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "500m"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           ports:
             - containerPort: 80
           envFrom:
-            - secretRef:
-                name: vehicle-service-env
-          # livenessProbe:
-          #   httpGet:
-          #     path: /api
-          #     port: 80
-          #   initialDelaySeconds: 60
-          #   timeoutSeconds: 5
-          #   periodSeconds: 15
+            - configMapRef:
+                name: global-fleet-config
+          env:
+            - name: CORS_ALLOW_ORIGIN
+              value: "^.*$"
+            - name: APP_ENV
+              value: "dev"
+
 ---
 apiVersion: v1
 kind: Service
@@ -43,11 +42,10 @@ metadata:
   name: vehicle-service
   namespace: fleet-manager
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: vehicle-service
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
-      nodePort: 30081

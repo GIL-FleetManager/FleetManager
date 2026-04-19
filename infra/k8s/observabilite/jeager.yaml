@@ -43,7 +43,7 @@ spec:
     spec:
       containers:
       - image: jaegertracing/jaeger:2.16.0
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Never
         livenessProbe:
           failureThreshold: 5
           httpGet:

@@ -16,7 +16,7 @@ spec:
       containers:
         - name: event-service
           image: fleetmanager-event-service:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           resources:
             requests:
               memory: "128Mi"
@@ -26,6 +26,9 @@ spec:
               cpu: "300m"
           ports:
             - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: global-fleet-config
 ---
 apiVersion: v1
 kind: Service
@@ -33,11 +36,10 @@ metadata:
   name: event-service
   namespace: fleet-manager
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: event-service
   ports:
     - protocol: TCP
       port: 8000
       targetPort: 8000
-      nodePort: 30085

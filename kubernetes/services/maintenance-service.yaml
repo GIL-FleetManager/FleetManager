@@ -16,7 +16,7 @@ spec:
       containers:
         - name: maintenance-service
           image: fleetmanager-maintenance-service:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           resources:
             requests:
               memory: "128Mi"
@@ -27,14 +27,8 @@ spec:
           ports:
             - containerPort: 80
           envFrom:
-            - secretRef:
-                name: vehicle-service-env
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 80
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            - configMapRef:
+                name: global-fleet-config
 ---
 apiVersion: v1
 kind: Service
@@ -42,11 +36,10 @@ metadata:
   name: maintenance-service
   namespace: fleet-manager
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: maintenance-service
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
-      nodePort: 30083

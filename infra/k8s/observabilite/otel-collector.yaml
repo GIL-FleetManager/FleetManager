@@ -78,7 +78,7 @@ spec:
               apiVersion: v1
               fieldPath: status.podIP
         image: otel/opentelemetry-collector-contrib:0.147.0
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Never
         livenessProbe:
           failureThreshold: 3
           httpGet:
