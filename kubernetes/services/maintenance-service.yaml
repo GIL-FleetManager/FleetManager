@@ -29,6 +29,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: global-fleet-config
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@fleet-db-postgresql.database.svc.cluster.local:5432/maintenance_db"
+
 ---
 apiVersion: v1
 kind: Service

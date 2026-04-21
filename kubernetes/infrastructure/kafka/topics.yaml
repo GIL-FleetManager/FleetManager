@@ -1,0 +1,24 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: vehicle-events
+  namespace: fleet-manager
+  labels:
+    strimzi.io/cluster: fleet-kafka
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: test-fleet
+  namespace: fleet-manager
+  labels:
+    strimzi.io/cluster: fleet-kafka
+spec:
+  partitions: 1
+  replicas: 1
