@@ -2,10 +2,8 @@ framework:
     messenger:
         transports:
             kafka_fleet:
-                dsn: "kafka:9092"
+                dsn: "enqueue://default"
                 serializer: "messenger.transport.native_php_serializer"
-                options:
-                    commit_async: true
 
         routing:
             'App\Message\VehicleStatusChanged': kafka_fleet

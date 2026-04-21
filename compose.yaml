@@ -167,6 +167,7 @@ services:
       - APP_SECRET=${APP_SECRET}
       - CORS_ALLOW_ORIGIN=*
       - DEFAULT_URI=${DEFAULT_URI}
+      - ENQUEUE_DSN=kafka://kafka:9092
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-vehicle:5432/fleetmanager?serverVersion=16
     ports:
       - "8081:80"
@@ -182,6 +183,7 @@ services:
       retries: 3
     volumes:
       - ./services/vehicle-service:/app:rw
+      - /app/vendor
 
   conductor-service:
     build:
@@ -208,6 +210,7 @@ services:
       retries: 3
     volumes:
       - ./services/conductor-service:/app:rw
+      - /app/vendor
 
   maintenance-service:
     build:
@@ -234,6 +237,7 @@ services:
       retries: 3
     volumes:
       - ./services/maintenance-service:/app:rw
+      - /app/vendor
 
   localization-service:
     build: ./services/localization-service

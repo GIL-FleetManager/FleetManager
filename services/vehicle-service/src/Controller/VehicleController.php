@@ -38,12 +38,13 @@ class VehicleController extends AbstractController
     public function create(Request $request): JsonResponse
     {
         $body = json_decode($request->getContent(), true);
-        if (!$body) return $this->json(['error' => 'Invalid JSON'], 400);
+        if (!is_array($body)) return $this->json(['error' => 'Invalid JSON'], 400);
 
         $vehicle = new Vehicle();
         $vehicle->setImmatriculation($body['immatriculation'] ?? '');
+        $vehicle->setMarque($body['marque'] ?? '');
+        $vehicle->setModele($body['modele'] ?? '');
         $vehicle->setStatut($body['statut'] ?? 'disponible');
-        // ... set other fields ...
 
         $this->em->persist($vehicle);
         $this->em->flush();
@@ -81,9 +82,12 @@ class VehicleController extends AbstractController
 
         $oldStatus = $vehicle->getStatut();
         $body = json_decode($request->getContent(), true);
+        if (!is_array($body)) return $this->json(['error' => 'Invalid JSON'], 400);
 
+        if (isset($body['immatriculation'])) $vehicle->setImmatriculation($body['immatriculation']);
+        if (isset($body['marque'])) $vehicle->setMarque($body['marque']);
+        if (isset($body['modele'])) $vehicle->setModele($body['modele']);
         if (isset($body['statut'])) $vehicle->setStatut($body['statut']);
-        // ... update other fields ...
 
         $this->em->flush();
 
@@ -97,7 +101,7 @@ class VehicleController extends AbstractController
             ));
         }
 
-        return $this->json($vehicle);
+        return $this->json($this->serialize($vehicle));
     }
 
     // DELETE /api/vehicles/{id}
