@@ -208,6 +208,7 @@ services:
       retries: 3
     volumes:
       - ./services/conductor-service:/app:rw
+      - /app/vendor
 
   maintenance-service:
     build:
