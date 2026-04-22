@@ -1,23 +1,34 @@
 import { TestBed } from '@angular/core/testing';
-import { App } from './app';
+import { RouterTestingModule } from '@angular/router/testing';
+import { KeycloakService } from 'keycloak-angular';
+import { vi } from 'vitest';
+import { AppComponent } from './app';
 
-describe('App', () => {
+describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [RouterTestingModule, AppComponent],
+      providers: [
+        {
+          provide: KeycloakService,
+          useValue: {
+            logout: vi.fn(),
+          },
+        },
+      ],
     }).compileComponents();
   });
 
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
+  it('should render navbar title', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, shell');
+    expect(compiled.querySelector('strong')?.textContent).toContain('FleetManager');
   });
 });
