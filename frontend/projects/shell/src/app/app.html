@@ -1,0 +1,13 @@
+<nav style="padding: 1rem; background: #2c3e50; color: white; display: flex; justify-content: space-between;">
+  <div>
+    <strong>FleetManager</strong>
+    <a routerLink="/conducteurs" style="margin-left: 20px; color: white; text-decoration: none;">Conducteurs</a>
+  </div>
+  <button (click)="logout()" style="background: #e74c3c; border: none; color: white; padding: 5px 10px; cursor: pointer;">
+    Déconnexion
+  </button>
+</nav>
+
+<div style="padding: 20px;">
+  <router-outlet></router-outlet>
+</div>
