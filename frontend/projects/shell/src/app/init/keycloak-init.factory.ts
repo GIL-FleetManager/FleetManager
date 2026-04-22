@@ -5,7 +5,7 @@ export function initializeKeycloak(keycloak: KeycloakService) {
     keycloak.init({
       config: {
         url: 'http://localhost:8080', 
-        realm: 'FleetManagement',     
+        realm: 'fleet-manager',
         clientId: 'fleet-frontend'  
       },
       initOptions: {
