@@ -279,6 +279,27 @@ services:
       - localization-service
     networks:
       - fleet-network
+  frontend-service:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fleet-frontend
+    ports:
+      - "4200:4200"
+    depends_on:
+      keycloak:
+        condition: service_started
+      api-gateway:
+        condition: service_started
+    networks:
+      - fleet-network
+    volumes:
+      # Synchronise le code de ton PC vers le conteneur
+      - ./frontend:/app:rw
+      # Protège le dossier node_modules du conteneur pour éviter les conflits Windows/Linux
+      - /app/node_modules
+
+      
 
 networks:
   fleet-network:

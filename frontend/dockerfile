@@ -1,0 +1,18 @@
+# Utilisation de la version LTS de Node.js
+FROM node:20-alpine
+
+WORKDIR /app
+
+# On installe Angular CLI globalement
+RUN npm install -g @angular/cli@17
+
+# On copie d'abord les fichiers de dépendances pour utiliser le cache Docker
+COPY package*.json ./
+
+# Installation des dépendances
+RUN npm install
+
+# La commande pour lancer le serveur de développement Angular
+# Le --host 0.0.0.0 permet de rendre l'app accessible depuis ton Windows
+# Le --poll 2000 force la détection des changements de fichiers sous Docker
+CMD ["ng", "serve", "shell", "--host", "0.0.0.0", "--poll", "2000"]
