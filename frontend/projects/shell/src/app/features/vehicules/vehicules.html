@@ -1,0 +1,130 @@
+<div class="page">
+
+  <!-- Toast -->
+  @if (toast()) {
+    <div class="toast" [class]="toast()!.type">{{ toast()!.msg }}</div>
+  }
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>🚗 Gestion des Véhicules</h1>
+      <p class="subtitle">{{ filtered().length }} véhicule(s) trouvé(s)</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreate()">+ Nouveau véhicule</button>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input
+      type="text"
+      placeholder="Rechercher par immatriculation, marque, modèle..."
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
+  </div>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Chargement des véhicules...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">⚠️ {{ error() }}</div>
+  } @else {
+
+    <!-- Table -->
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Immatriculation</th>
+            <th>Marque</th>
+            <th>Modèle</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (v of filtered(); track v.id) {
+            <tr>
+              <td><strong class="immat">{{ v.immatriculation }}</strong></td>
+              <td>{{ v.marque }}</td>
+              <td>{{ v.modele }}</td>
+              <td><span class="badge" [class]="statutClass(v.statut)">{{ statutLabel(v.statut) }}</span></td>
+              <td class="actions">
+                <button class="btn-icon edit" (click)="openEdit(v)" title="Modifier">✏️</button>
+                <button class="btn-icon delete" (click)="confirmDelete(v.id!)" title="Supprimer">🗑️</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty-row">Aucun véhicule trouvé</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Modal Créer / Modifier -->
+  @if (modalMode()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ modalMode() === 'create' ? '+ Nouveau véhicule' : '✏️ Modifier le véhicule' }}</h2>
+          <button class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Immatriculation *</label>
+            <input type="text" [(ngModel)]="form.immatriculation" placeholder="Ex: AB-123-CD" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Marque *</label>
+              <input type="text" [(ngModel)]="form.marque" placeholder="Ex: Renault" />
+            </div>
+            <div class="form-group">
+              <label>Modèle *</label>
+              <input type="text" [(ngModel)]="form.modele" placeholder="Ex: Clio" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Statut</label>
+            <select [(ngModel)]="form.statut">
+              @for (s of statuts; track s) {
+                <option [value]="s">{{ statutLabel(s) }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button class="btn btn-primary" (click)="save()" [disabled]="saving()">
+            {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Confirm Suppression -->
+  @if (deleteId()) {
+    <div class="modal-overlay" (click)="cancelDelete()">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header danger">
+          <h2>🗑️ Confirmer la suppression</h2>
+        </div>
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer ce véhicule ? Cette action est irréversible.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="cancelDelete()">Annuler</button>
+          <button class="btn btn-danger" (click)="doDelete()">Supprimer</button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

@@ -1,20 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
-import { KeycloakService } from 'keycloak-angular';
-import { vi } from 'vitest';
+import { provideRouter } from '@angular/router';
 import { AppComponent } from './app';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, AppComponent],
+      imports: [AppComponent],
       providers: [
-        {
-          provide: KeycloakService,
-          useValue: {
-            logout: vi.fn(),
-          },
-        },
+        provideRouter([]),
       ],
     }).compileComponents();
   });
@@ -27,6 +20,7 @@ describe('AppComponent', () => {
 
   it('should render navbar title', async () => {
     const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('strong')?.textContent).toContain('FleetManager');

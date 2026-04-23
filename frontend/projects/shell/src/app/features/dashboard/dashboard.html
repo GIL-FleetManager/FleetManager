@@ -1,0 +1,48 @@
+<div class="dashboard-wrapper">
+
+  @if (isLoading()) {
+    <div class="dashboard-loading">
+      <div class="loading-spinner"></div>
+      <p>Initialisation du tableau de bord...</p>
+    </div>
+  } @else {
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="header-left">
+        <div class="welcome-text">
+          <h1>Bonjour, <span class="user-name">{{ userName() }}</span> 👋</h1>
+          <p class="date-text">{{ currentDate }}</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="role-chip">{{ getRoleLabel() }}</span>
+        <button class="logout-btn" (click)="logout()">
+          <span>⏻</span> Déconnexion
+        </button>
+      </div>
+    </header>
+
+    <!-- Role-based widgets -->
+    <div class="widgets-container">
+      @switch (userRole()) {
+        @case ('admin') {
+          <app-admin-widgets />
+        }
+        @case ('manager') {
+          <app-manager-widgets />
+        }
+        @case ('technician') {
+          <app-technician-widgets />
+        }
+        @default {
+          <div class="unknown-role">
+            <span>❓</span>
+            <h3>Rôle non reconnu</h3>
+            <p>Contactez votre administrateur.</p>
+          </div>
+        }
+      }
+    </div>
+  }
+
+</div>

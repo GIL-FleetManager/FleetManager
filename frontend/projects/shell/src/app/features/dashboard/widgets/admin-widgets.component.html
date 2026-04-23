@@ -1,0 +1,111 @@
+@if (isLoading()) {
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement du tableau de bord...</p>
+  </div>
+} @else {
+  <div class="admin-dashboard">
+
+    <!-- KPI Cards -->
+    <section class="kpi-section">
+      @for (kpi of kpis(); track kpi.label) {
+        <a class="kpi-card" [routerLink]="kpi.link ?? null" [class.clickable]="kpi.link">
+          <div class="kpi-icon" [style.background]="kpi.color + '20'" [style.color]="kpi.color">
+            {{ kpi.icon }}
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-value">{{ kpi.value }}</span>
+            <span class="kpi-label">{{ kpi.label }}</span>
+          </div>
+          @if (kpi.trend === 'danger') {
+            <span class="kpi-trend danger">↑</span>
+          } @else if (kpi.trend === 'warn') {
+            <span class="kpi-trend warn">!</span>
+          }
+        </a>
+      }
+    </section>
+
+    <div class="dashboard-grid">
+
+      <!-- Véhicules récents -->
+      <section class="card">
+        <div class="card-header">
+          <h3>🚗 Véhicules récents</h3>
+          <a routerLink="/vehicules" class="see-all">Voir tout →</a>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Immatriculation</th>
+              <th>Marque</th>
+              <th>Modèle</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of recentVehicles(); track v.id) {
+              <tr>
+                <td><strong>{{ v.immatriculation }}</strong></td>
+                <td>{{ v.marque }}</td>
+                <td>{{ v.modele }}</td>
+                <td><span class="badge" [class]="getStatutClass(v.statut)">{{ v.statut }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="empty-row">Aucun véhicule</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Interventions récentes -->
+      <section class="card">
+        <div class="card-header">
+          <h3>🔧 Interventions récentes</h3>
+          <a routerLink="/maintenance" class="see-all">Voir tout →</a>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Statut</th>
+              <th>Date début</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (i of recentInterventions(); track i.id) {
+              <tr>
+                <td>{{ i.type_intervention }}</td>
+                <td><span class="badge" [class]="getStatutClass(i.statut)">{{ i.statut }}</span></td>
+                <td>{{ i.date_debut | date:'dd/MM/yyyy' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="empty-row">Aucune intervention</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Alertes préventives -->
+      @if (alerts().length > 0) {
+        <section class="card alerts-card">
+          <div class="card-header">
+            <h3>🔔 Alertes Préventives</h3>
+          </div>
+          <ul class="alert-list">
+            @for (alert of alerts(); track $index) {
+              <li class="alert-item">
+                <span class="alert-dot"></span>
+                <div class="alert-body">
+                  <strong>{{ alert.type_intervention ?? 'Maintenance requise' }}</strong>
+                  <small>Véhicule : {{ alert.vehicule_id ?? 'N/A' }}</small>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+    </div>
+  </div>
+}
