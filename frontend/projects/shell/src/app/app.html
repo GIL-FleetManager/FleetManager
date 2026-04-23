@@ -5,9 +5,9 @@
   </div>
   <div class="nav-links">
     <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-    <a routerLink="/vehicules" routerLinkActive="active">Véhicules</a>
-    <a routerLink="/conducteurs" routerLinkActive="active">Conducteurs</a>
-    <a routerLink="/maintenance" routerLinkActive="active">Maintenance</a>
+    <a routerLink="/vehicules"   routerLinkActive="active" *ngIf="isManager()">Véhicules</a>
+    <a routerLink="/conducteurs" routerLinkActive="active" *ngIf="isManager()">Conducteurs</a>
+    <a routerLink="/maintenance" routerLinkActive="active" *ngIf="isManager()">Maintenance</a>
   </div>
 </nav>
 

@@ -48,15 +48,15 @@ export class AdminWidgetsComponent implements OnInit {
 
   ngOnInit(): void {
     forkJoin({
-      vehicles:      this.http.get<any>(`${environment.services.vehicles}/api/vehicles`).pipe(catchError(() => of({ 'hydra:member': [] }))),
-      conductors:    this.http.get<any>(`${environment.services.drivers}/api/conductors`).pipe(catchError(() => of([]))),
-      interventions: this.http.get<any>(`${environment.services.maintenance}/api/interventions`).pipe(catchError(() => of([]))),
+      vehicles:      this.http.get<any>(`${environment.services.vehicles}/api/vehicles`, { headers: {'Accept':'application/ld+json'} }).pipe(catchError(() => of({ member: [] }))),
+      conductors:    this.http.get<any>(`${environment.services.drivers}/api/conductors`, { headers: {'Accept':'application/ld+json'} }).pipe(catchError(() => of({ member: [] }))),
+      interventions: this.http.get<any>(`${environment.services.maintenance}/api/interventions`, { headers: {'Accept':'application/ld+json'} }).pipe(catchError(() => of({ member: [] }))),
       alerts:        this.http.get<any>(`${environment.services.maintenance}/api/interventions/alerts/preventive`).pipe(catchError(() => of([]))),
     }).subscribe(({ vehicles, conductors, interventions, alerts }) => {
 
-      const vehicleList: Vehicle[] = vehicles['hydra:member'] ?? vehicles ?? [];
-      const conductorList: any[]   = conductors['hydra:member'] ?? conductors ?? [];
-      const interventionList: Intervention[] = interventions['hydra:member'] ?? interventions ?? [];
+      const vehicleList: Vehicle[]        = vehicles['member'] ?? vehicles['hydra:member'] ?? [];
+      const conductorList: any[]           = conductors['member'] ?? conductors['hydra:member'] ?? [];
+      const interventionList: Intervention[] = interventions['member'] ?? interventions['hydra:member'] ?? [];
       const alertList: any[] = alerts['alerts'] ?? alerts ?? [];
 
       const enPanne    = vehicleList.filter((v: Vehicle) => v.statut === 'en_panne').length;

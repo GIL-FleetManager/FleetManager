@@ -1,44 +1,143 @@
-<div class="container">
-  <h1>Liste des Conducteurs</h1>
+<div class="page-container">
 
-  @if (isLoading) {
-    <div>Chargement...</div>
-  }
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1>👥 Conducteurs</h1>
+      <span class="count-badge" *ngIf="!isLoading()">{{ filtered().length }}</span>
+    </div>
+    <button class="btn btn-primary" (click)="openCreate()">+ Nouveau conducteur</button>
+  </div>
 
-  @if (error) {
-    <div>{{ error }}</div>
-  }
+  <!-- Search -->
+  <div class="search-bar">
+    <input type="text" placeholder="Rechercher par nom, email ou n° permis…"
+      [ngModel]="search()" (ngModelChange)="search.set($event)" />
+  </div>
 
-  @if (!isLoading && conducteurs.length > 0) {
-    <table>
+  <!-- Error -->
+  <div class="error-msg" *ngIf="error()">{{ error() }}</div>
+
+  <!-- Loading -->
+  <div class="loading-spinner" *ngIf="isLoading()">Chargement…</div>
+
+  <!-- Table -->
+  <div class="table-wrapper" *ngIf="!isLoading()">
+    <table class="data-table">
       <thead>
         <tr>
           <th>Nom</th>
           <th>Prénom</th>
           <th>Email</th>
-          <th>Permis</th>
+          <th>Téléphone</th>
+          <th>N° Permis</th>
+          <th>Expiration</th>
           <th>Statut</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        @for (c of conducteurs; track c.id) {
-          <tr>
-            <td>{{ c.nom }}</td>
-            <td>{{ c.prenom }}</td>
-            <td>{{ c.email }}</td>
-            <td>{{ c.numeroPermis }}</td>
-            <td>{{ c.statut }}</td>
-            <td>
-              <button (click)="delete(c.id)">Supprimer</button>
-            </td>
-          </tr>
-        }
+        <tr *ngFor="let c of filtered()">
+          <td>{{ c.nom }}</td>
+          <td>{{ c.prenom }}</td>
+          <td>{{ c.email }}</td>
+          <td>{{ c.telephone || '—' }}</td>
+          <td>{{ c.numeroPermis }}</td>
+          <td>
+            <span [class.text-warning]="isExpiringSoon(c.dateExpirationPermis)"
+                  [class.text-danger]="isExpired(c.dateExpirationPermis)">
+              {{ c.dateExpirationPermis | date:'dd/MM/yyyy' }}
+              <span *ngIf="isExpired(c.dateExpirationPermis)"> ⚠️</span>
+              <span *ngIf="!isExpired(c.dateExpirationPermis) && isExpiringSoon(c.dateExpirationPermis)"> 🔔</span>
+            </span>
+          </td>
+          <td><span class="badge" [ngClass]="statutClass(c.statut)">{{ c.statut }}</span></td>
+          <td class="actions">
+            <button class="btn btn-sm btn-edit" (click)="openEdit(c)">✏️ Modifier</button>
+            <button class="btn btn-sm btn-delete" (click)="confirmDelete(c.id!)">🗑️ Supprimer</button>
+          </td>
+        </tr>
+        <tr *ngIf="filtered().length === 0">
+          <td colspan="8" class="empty-row">Aucun conducteur trouvé.</td>
+        </tr>
       </tbody>
     </table>
-  }
+  </div>
 
-  @if (!isLoading && conducteurs.length === 0) {
-    <div>Aucun conducteur trouvé.</div>
-  }
+  <!-- Modal Create / Edit -->
+  <div class="modal-overlay" *ngIf="modalMode()" (click)="closeModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ modalMode() === 'create' ? 'Nouveau conducteur' : 'Modifier le conducteur' }}</h2>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nom *</label>
+            <input type="text" [(ngModel)]="form.nom" placeholder="Nom" />
+          </div>
+          <div class="form-group">
+            <label>Prénom *</label>
+            <input type="text" [(ngModel)]="form.prenom" placeholder="Prénom" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" [(ngModel)]="form.email" placeholder="email@example.com" />
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="tel" [(ngModel)]="form.telephone" placeholder="+213…" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>N° Permis *</label>
+            <input type="text" [(ngModel)]="form.numeroPermis" placeholder="AB-12345" />
+          </div>
+          <div class="form-group">
+            <label>Date d'expiration *</label>
+            <input type="date" [(ngModel)]="form.dateExpirationPermis" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Statut</label>
+          <select [(ngModel)]="form.statut">
+            <option *ngFor="let s of statuts" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+        <button class="btn btn-primary" (click)="save()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirm Delete -->
+  <div class="modal-overlay" *ngIf="deleteId()" (click)="cancelDelete()">
+    <div class="modal-box modal-small" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>⚠️ Confirmer la suppression</h2>
+        <button class="modal-close" (click)="cancelDelete()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Êtes-vous sûr de vouloir supprimer ce conducteur ? Cette action est irréversible.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cancelDelete()">Annuler</button>
+        <button class="btn btn-danger" (click)="doDelete()">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" *ngIf="toast()" [ngClass]="'toast-' + toast()!.type">
+    {{ toast()!.msg }}
+  </div>
+
 </div>

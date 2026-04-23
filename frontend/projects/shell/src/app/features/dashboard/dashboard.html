@@ -34,11 +34,15 @@
         @case ('technician') {
           <app-technician-widgets />
         }
+        @case ('conducteur') {
+          <app-conducteur-widgets [email]="userEmail()" />
+        }
         @default {
           <div class="unknown-role">
             <span>❓</span>
             <h3>Rôle non reconnu</h3>
-            <p>Contactez votre administrateur.</p>
+            <p>Ouvre la console (F12) et cherche <strong>[Dashboard]</strong> pour voir tes rôles Keycloak.</p>
+            <p>Email connecté : <code>{{ userEmail() }}</code></p>
           </div>
         }
       }

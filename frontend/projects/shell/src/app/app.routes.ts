@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { roleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -13,16 +14,19 @@ export const routes: Routes = [
   },
   {
     path: 'conducteurs',
+    canActivate: [roleGuard],
     loadComponent: () =>
       import('./features/conducteurs/conducteurs').then(m => m.Conducteurs),
   },
   {
     path: 'vehicules',
+    canActivate: [roleGuard],
     loadComponent: () =>
       import('./features/vehicules/vehicules').then(m => m.Vehicules),
   },
   {
     path: 'maintenance',
+    canActivate: [roleGuard],
     loadComponent: () =>
       import('./features/maintenance/maintenance').then(m => m.Maintenance),
   },
