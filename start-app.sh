@@ -8,4 +8,4 @@ echo "Apollo Explorer: http://localhost:8081"
 echo "Keycloak Admin:   http://localhost:8080"
 echo "------------------------------------------------"
 echo "Press [Ctrl+C] to stop the app bridge."
-wait·
+wait

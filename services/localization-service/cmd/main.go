@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	_ "embed"
 	"encoding/json"
 	"log"
@@ -11,7 +12,6 @@ import (
 	_ "github.com/GIL-FleetManager/FleetManager/docs"
 	"github.com/labstack/echo/v4"
 	"github.com/segmentio/kafka-go"
-	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 type GpsPoint struct {
@@ -22,7 +22,16 @@ type GpsPoint struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-var swaggerJSON []byte
+var db *sql.DB
+
+func initDB() {
+	connStr := "postgres://postgres:${POSTGRES_PASSWORD}@localhost:8085/localization_db?sslmode=disable"
+	var err error
+	db, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 // @title Localization Service API
 // @version 1.0
@@ -31,63 +40,51 @@ var swaggerJSON []byte
 // @BasePath /
 func main() {
 	e := echo.New()
+	initDB()
 
-	broker := "kafka:9092"
+	broker := "localhost:9092"
 	topic := "fleet.location.raw"
 
 	writer := &kafka.Writer{
-		Addr:                   kafka.TCP(broker),
-		Topic:                  topic,
-		Balancer:               &kafka.LeastBytes{},
-		AllowAutoTopicCreation: true,
-		Async:                  false,
+		Addr:     kafka.TCP(broker),
+		Topic:    topic,
+		Balancer: &kafka.LeastBytes{},
 	}
 	defer writer.Close()
 
-	// Background GPS Firehose
-	go func() {
-		log.Printf("Starting GPS Firehose to %s", topic)
-		for {
-			point := GpsPoint{
-				VehicleID: "550e8400-e29b-41d4-a716-446655440000",
-				Lat:       49.4431,
-				Lng:       1.0993,
-				Speed:     85.0,
-				Timestamp: time.Now(),
-			}
-
-			payload, _ := json.Marshal(point)
-			err := writer.WriteMessages(context.Background(),
-				kafka.Message{
-					Key:   []byte(point.VehicleID),
-					Value: payload,
-				},
-			)
-
-			if err != nil {
-				log.Printf("Kafka Error: %v", err)
-			} else {
-				log.Printf("✔ Sent GPS point for vehicle %s", point.VehicleID)
-			}
-			time.Sleep(2 * time.Second)
+	// Receive GPS from Frontend
+	e.POST("/api/location", func(c echo.Context) error {
+		point := new(GpsPoint)
+		if err := c.Bind(point); err != nil {
+			return err
 		}
-	}()
+		point.Timestamp = time.Now()
 
-	// --- ROUTES ---
-	e.GET("/api", func(c echo.Context) error {
-		return c.Redirect(http.StatusMovedPermanently, "/api/index.html")
+		// 1. Save to TimescaleDB (Historical Tracking)
+		query := `INSERT INTO vehicle_locations (vehicle_id, location, speed, time) 
+                  VALUES ($1, ST_MakePoint($2, $3), $4, $5)`
+		_, err := db.Exec(query, point.VehicleID, point.Lng, point.Lat, point.Speed, point.Timestamp)
+		if err != nil {
+			log.Printf("DB Error: %v", err)
+		}
+
+		// 2. Stream to Kafka (Real-time Alerts)
+		payload, _ := json.Marshal(point)
+		err = writer.WriteMessages(context.Background(),
+			kafka.Message{
+				Key:   []byte(point.VehicleID),
+				Value: payload,
+			},
+		)
+
+		return c.JSON(http.StatusAccepted, map[string]string{"status": "captured"})
 	})
 
-	e.GET("/api/doc.json", func(c echo.Context) error {
-		return c.JSONBlob(http.StatusOK, swaggerJSON)
+	e.GET("/health", func(c echo.Context) error {
+		return c.String(http.StatusOK, "Localisation service is healthy")
 	})
 
-	e.GET("/api/*", echoSwagger.WrapHandler)
-
-	e.GET("/", RootHandler)
-	e.GET("/health", HealthHandler)
-
-	log.Fatal(e.Start(":8000"))
+	log.Fatal(e.Start(":8084")) // Port 8084 for your Compose setup
 }
 
 // RootHandler godoc

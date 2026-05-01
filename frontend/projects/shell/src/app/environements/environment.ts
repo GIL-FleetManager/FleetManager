@@ -1,25 +1,26 @@
 export const environment = {
   production: false,
 
-  // === API Gateway (point d'entrée unique) ===
-  apiGatewayUrl: 'http://localhost:8080/api',
+  // === Graphql API Gateway (Single entry point via K8s bridge) ===
+  // start-app.sh script forwards 8081 -> 8080
+  apiGatewayUrl: 'http://localhost:8081/api',
 
-  // === URLs directes des microservices (dev uniquement) ===
-  services: {
-    vehicles:     'http://localhost:8081',
-    drivers:      'http://localhost:8082',
-    maintenance:  'http://localhost:8083',
-    location:     'http://localhost:8084',
-    events:       'http://localhost:8085',
-  },
-
-  // === Keycloak ===
+  // === Keycloak (Auth via K8s bridge) ===
+  // start-app.sh script forwards 8080 -> 8080
   keycloak: {
-    url:    'http://localhost:8080',
-    realm:  'fleet-manager',
+    url: 'http://localhost:8080',
+    realm: 'fleet-manager',
     client: 'fleet-frontend',
   },
 
-  // === WebSocket / gRPC-Web pour la localisation ===
-  wsUrl: 'ws://localhost:3004/location/stream',
+  // === Services (Routes handled by the Gateway) ===
+  services: {
+    vehicles: 'http://localhost:8081/api/vehicles',
+    drivers: 'http://localhost:8081/api/conducteurs',
+    maintenance: 'http://localhost:8081/api/maintenance',
+    location: 'http://localhost:8081/api/location',
+    events: 'http://localhost:8081/api/events',
+  },
+
+  wsUrl: 'ws://localhost:8084/location/stream',
 };

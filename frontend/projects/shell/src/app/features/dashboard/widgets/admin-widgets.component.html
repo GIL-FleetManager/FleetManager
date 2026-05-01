@@ -5,7 +5,6 @@
   </div>
 } @else {
   <div class="admin-dashboard">
-
     <!-- KPI Cards -->
     <section class="kpi-section">
       @for (kpi of kpis(); track kpi.label) {
@@ -27,7 +26,6 @@
     </section>
 
     <div class="dashboard-grid">
-
       <!-- Véhicules récents -->
       <section class="card">
         <div class="card-header">
@@ -37,22 +35,28 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Immatriculation</th>
-              <th>Marque</th>
+              <th>plateNumber</th>
+              <th>brand</th>
               <th>Modèle</th>
-              <th>Statut</th>
+              <th>status</th>
             </tr>
           </thead>
           <tbody>
             @for (v of recentVehicles(); track v.id) {
               <tr>
-                <td><strong>{{ v.immatriculation }}</strong></td>
-                <td>{{ v.marque }}</td>
-                <td>{{ v.modele }}</td>
-                <td><span class="badge" [class]="getStatutClass(v.statut)">{{ v.statut }}</span></td>
+                <td>
+                  <strong>{{ v.plateNumber }}</strong>
+                </td>
+                <td>{{ v.brand }}</td>
+                <td>{{ v.model }}</td>
+                <td>
+                  <span class="badge" [class]="getStatutClass(v.status)">{{ v.status! }}</span>
+                </td>
               </tr>
             } @empty {
-              <tr><td colspan="4" class="empty-row">Aucun véhicule</td></tr>
+              <tr>
+                <td colspan="4" class="empty-row">Aucun véhicule</td>
+              </tr>
             }
           </tbody>
         </table>
@@ -68,7 +72,7 @@
           <thead>
             <tr>
               <th>Type</th>
-              <th>Statut</th>
+              <th>status</th>
               <th>Date début</th>
             </tr>
           </thead>
@@ -76,11 +80,15 @@
             @for (i of recentInterventions(); track i.id) {
               <tr>
                 <td>{{ i.type_intervention }}</td>
-                <td><span class="badge" [class]="getStatutClass(i.statut)">{{ i.statut }}</span></td>
-                <td>{{ i.date_debut | date:'dd/MM/yyyy' }}</td>
+                <td>
+                  <span class="badge" [class]="getStatutClass(i.status)">{{ i.status }}</span>
+                </td>
+                <td>{{ i.date_debut | date: 'dd/MM/yyyy' }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="3" class="empty-row">Aucune intervention</td></tr>
+              <tr>
+                <td colspan="3" class="empty-row">Aucune intervention</td>
+              </tr>
             }
           </tbody>
         </table>
@@ -105,7 +113,6 @@
           </ul>
         </section>
       }
-
     </div>
   </div>
 }

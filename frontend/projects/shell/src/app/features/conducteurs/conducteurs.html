@@ -17,7 +17,7 @@
           <th>Prénom</th>
           <th>Email</th>
           <th>Permis</th>
-          <th>Statut</th>
+          <th>status</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -28,7 +28,7 @@
             <td>{{ c.prenom }}</td>
             <td>{{ c.email }}</td>
             <td>{{ c.numeroPermis }}</td>
-            <td>{{ c.statut }}</td>
+            <td>{{ c.status }}</td>
             <td>
               <button (click)="delete(c.id)">Supprimer</button>
             </td>

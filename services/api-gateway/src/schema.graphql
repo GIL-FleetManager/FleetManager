@@ -1,7 +1,9 @@
 type Vehicle {
   id: ID!
-  model: String
   plateNumber: String
+  brand: String
+  model: String
+  status: String
   location: GpsPoint
 }
 
@@ -13,6 +15,16 @@ type GpsPoint {
 }
 
 type Query {
+  vehicles: [Vehicle]
   getVehicle(id: ID!): Vehicle
-  getAllVehicles: [Vehicle]
+  health: String
+}
+
+type Mutation {
+  createVehicle(
+    plateNumber: String!
+    brand: String!
+    model: String!
+    status: String!
+  ): Vehicle
 }

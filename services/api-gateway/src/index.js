@@ -1,8 +1,9 @@
 const { ApolloServer, gql, AuthenticationError } = require("apollo-server");
-const axios = require("axios");
-
 const jwt = require("jsonwebtoken");
 const jwksClient = require("jwks-rsa");
+
+// 1. Import your modular resolvers
+const vehicleResolvers = require("./resolvers/vehicle-resolvers");
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://fleet-keycloak:8080";
 
@@ -23,8 +24,10 @@ function getKey(header, callback) {
 const typeDefs = gql`
   type Vehicle {
     id: ID!
-    model: String
     plateNumber: String
+    brand: String
+    model: String
+    status: String
     location: GpsPoint
   }
 
@@ -36,59 +39,40 @@ const typeDefs = gql`
   }
 
   type Query {
+    vehicles: [Vehicle]
     getVehicle(id: ID!): Vehicle
     health: String
+  }
+
+  type Mutation {
+    createVehicle(
+      plateNumber: String!
+      brand: String!
+      model: String!
+      status: String!
+    ): Vehicle
+
+    deleteVehicle(id: ID!): Boolean
+
+    updateVehicle(
+      id: ID!
+      plateNumber: String
+      brand: String
+      model: String
+      status: String
+    ): Vehicle
   }
 `;
 
 const resolvers = {
   Query: {
     health: () => "OK",
-    getVehicle: async (_, { id }, context) => {
-      // Check if user has the right role in their JWT
-      const roles = context.user.realm_access.roles;
-      console.log("User Roles:", roles);
-      if (!roles.includes("user") && !roles.includes("admin")) {
-        throw new AuthenticationError("Insufficient permissions");
-      }
-
-      try {
-        const res = await axios.get(
-          `${process.env.VEHICLE_SERVICE_URL}/api/vehicles/${id}`,
-        );
-        const data = res.data;
-
-        return {
-          id: data.id,
-          model: data.modele,
-          plateNumber: data.immatriculation,
-          statut: data.statut,
-        };
-      } catch (error) {
-        console.error("Vehicle Service Error:", error.message);
-        throw new Error("Vehicle service unreachable or data not found");
-      }
-    },
+    ...vehicleResolvers.Query,
   },
-  Vehicle: {
-    location: async (parent, _, context) => {
-      // Only for admins or managers
-      const roles = context.user.realm_access.roles;
-      if (!roles.includes("user") && !roles.includes("admin")) {
-        throw new AuthenticationError("Insufficient permissions");
-      }
-
-      try {
-        const res = await axios.get(
-          `${process.env.LOCALIZATION_SERVICE_URL}/api/location/${parent.id}`,
-        );
-        return res.data;
-      } catch (error) {
-        console.error("Localization Service Error:", error.message);
-        return null;
-      }
-    },
+  Mutation: {
+    ...vehicleResolvers.Mutation,
   },
+  Vehicle: vehicleResolvers.Vehicle,
 };
 
 const server = new ApolloServer({

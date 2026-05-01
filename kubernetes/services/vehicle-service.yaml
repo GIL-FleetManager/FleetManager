@@ -35,7 +35,7 @@ spec:
             - name: APP_ENV
               value: "dev"
             - name: DATABASE_URL
-              value: "postgresql://postgres:$(DB_PASSWORD)@fleet-db-postgresql.database.svc.cluster.local:5432/vehicle_db"
+              value: "postgresql://postgres:$(DB_PASSWORD)@fleet-db-postgresql.database.svc.cluster.local:5432/vehicle_db?serverVersion=16.0.0"
 
 ---
 apiVersion: v1
