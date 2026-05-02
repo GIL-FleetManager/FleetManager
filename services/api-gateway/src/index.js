@@ -1,9 +1,16 @@
-const { ApolloServer, gql, AuthenticationError } = require("apollo-server");
+const { ApolloServer, AuthenticationError } = require("apollo-server");
 const jwt = require("jsonwebtoken");
 const jwksClient = require("jwks-rsa");
+const fs = require("node:fs");
+const path = require("node:path");
 
-// 1. Import your modular resolvers
-const vehicleResolvers = require("./resolvers/vehicle-resolvers");
+const vehiculeResolvers = require("./resolvers/vehicle-resolvers");
+const conducteurResolvers = require("./resolvers/conductor-resolvers");
+
+const typeDefs = fs.readFileSync(
+  path.join(__dirname, "schema.graphql"),
+  "utf8",
+);
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://fleet-keycloak:8080";
 
@@ -21,58 +28,16 @@ function getKey(header, callback) {
   });
 }
 
-const typeDefs = gql`
-  type Vehicle {
-    id: ID!
-    plateNumber: String
-    brand: String
-    model: String
-    status: String
-    location: GpsPoint
-  }
-
-  type GpsPoint {
-    latitude: Float
-    longitude: Float
-    speed: Float
-    timestamp: String
-  }
-
-  type Query {
-    vehicles: [Vehicle]
-    getVehicle(id: ID!): Vehicle
-    health: String
-  }
-
-  type Mutation {
-    createVehicle(
-      plateNumber: String!
-      brand: String!
-      model: String!
-      status: String!
-    ): Vehicle
-
-    deleteVehicle(id: ID!): Boolean
-
-    updateVehicle(
-      id: ID!
-      plateNumber: String
-      brand: String
-      model: String
-      status: String
-    ): Vehicle
-  }
-`;
-
 const resolvers = {
   Query: {
     health: () => "OK",
-    ...vehicleResolvers.Query,
+    ...vehiculeResolvers.Query,
+    ...conducteurResolvers.Query,
   },
   Mutation: {
-    ...vehicleResolvers.Mutation,
+    ...vehiculeResolvers.Mutation,
+    ...conducteurResolvers.Mutation,
   },
-  Vehicle: vehicleResolvers.Vehicle,
 };
 
 const server = new ApolloServer({
@@ -94,12 +59,10 @@ const server = new ApolloServer({
       };
 
       jwt.verify(token, getKey, options, (err, decoded) => {
-        if (err) {
-          console.error("DEBUG - JWT Error:", err.message);
+        if (err)
           return reject(
             new AuthenticationError(`Invalid Token: ${err.message}`),
           );
-        }
         resolve({ user: decoded });
       });
     });

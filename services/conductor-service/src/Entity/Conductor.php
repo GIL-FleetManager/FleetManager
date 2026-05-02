@@ -6,15 +6,34 @@ use ApiPlatform\Metadata\ApiResource;
 use App\Repository\ConductorRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Attribute\SerializedName;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\ApiProperty;
 
 #[ORM\Entity(repositoryClass: ConductorRepository::class)]
 #[ORM\Table(name: 'conducteurs')]
 #[ORM\HasLifecycleCallbacks]
-#[ApiResource]
+#[ApiResource(
+    shortName: 'Conductor',
+    operations: [
+        new GetCollection(),
+        new Get(uriTemplate: '/conductors/{id}'),
+        new Post(),
+        new Put(uriTemplate: '/conductors/{id}'),
+        new Patch(uriTemplate: '/conductors/{id}'),
+        new Delete(uriTemplate: '/conductors/{id}'),
+    ]
+)]
 class Conductor
 {
     #[ORM\Id]
     #[ORM\Column(type: 'string', length: 36, unique: true)]
+    #[ApiProperty(identifier: true)]
     private ?string $id = null;
 
     #[ORM\Column(length: 50)]
@@ -35,18 +54,22 @@ class Conductor
 
     #[ORM\Column(length: 30, unique: true)]
     #[Assert\NotBlank]
+    #[SerializedName("numero_permis")]
     private ?string $numeroPermis = null;
 
     #[ORM\Column(type: 'date_immutable')]
+    #[SerializedName("date_expiration_permis")]
     private ?\DateTimeImmutable $dateExpirationPermis = null;
 
     #[ORM\Column(length: 20)]
     private string $statut = 'actif';
 
     #[ORM\Column(type: 'datetime_immutable')]
+    #[SerializedName("created_at")]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
+    #[SerializedName("updated_at")]
     private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()

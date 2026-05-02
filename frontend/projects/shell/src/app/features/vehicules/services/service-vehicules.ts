@@ -2,12 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
 import { Observable, map } from 'rxjs';
 
-export interface Vehicle {
-  id: string;
-  plateNumber: string;
-  brand: string;
-  model: string;
-  status: 'available' | 'in_mission' | 'broken' | 'maintenance'; // statut -> status
+export interface Vehicule {
+  id?: string;
+  immatriculation: string;
+  marque: string;
+  modele: string;
+  statut: 'disponible' | 'en_mission' | 'en_panne' | 'en_maintenance';
 }
 
 @Injectable({ providedIn: 'root' })
@@ -16,32 +16,32 @@ export class ServiceVehicules {
 
   // --- QUERIES ---
   /**
-   * Récupère tous les véhicules via le Gateway
+   * Récupère tous les véhicules via la Gateway
    */
-  getAll(): Observable<Vehicle[]> {
+  getAll(): Observable<Vehicule[]> {
     return this.apollo
-      .watchQuery<{ vehicles: Partial<Vehicle>[] }>({
+      .watchQuery<{ vehicules: Partial<Vehicule>[] }>({
         query: gql`
-          query GetVehicles {
-            vehicles {
+          query GetVehicules {
+            vehicules {
               id
-              plateNumber
-              brand
-              model
-              status
+              immatriculation
+              marque
+              modele
+              statut
             }
           }
         `,
       })
       .valueChanges.pipe(
         map((res) =>
-          (res.data?.vehicles ?? []).filter(
-            (v): v is Vehicle =>
+          (res.data?.vehicules ?? []).filter(
+            (v): v is Vehicule =>
               typeof v.id === 'string' &&
-              typeof v.plateNumber === 'string' &&
-              typeof v.brand === 'string' &&
-              typeof v.model === 'string' &&
-              typeof v.status === 'string',
+              typeof v.immatriculation === 'string' &&
+              typeof v.marque === 'string' &&
+              typeof v.modele === 'string' &&
+              typeof v.statut === 'string',
           ),
         ),
       );
@@ -50,23 +50,23 @@ export class ServiceVehicules {
   /**
    * Récupère un véhicule spécifique par son ID
    */
-  getOne(id: string): Observable<Vehicle | null> {
+  getOne(id: string): Observable<Vehicule | null> {
     return this.apollo
-      .query<{ vehicle: Vehicle }>({
+      .query<{ getVehicule: Vehicule }>({
         query: gql`
-          query GetVehicle($id: ID!) {
-            vehicle(id: $id) {
+          query GetVehicule($id: ID!) {
+            getVehicule(id: $id) {
               id
-              plateNumber
-              brand
-              model
-              status
+              immatriculation
+              marque
+              modele
+              statut
             }
           }
         `,
         variables: { id },
       })
-      .pipe(map((res) => res.data?.vehicle ?? null));
+      .pipe(map((res) => res.data?.getVehicule ?? null));
   }
 
   // --- MUTATIONS ---
@@ -74,38 +74,38 @@ export class ServiceVehicules {
   /**
    * Crée un nouveau véhicule
    */
-  create(vehicle: Omit<Vehicle, 'id'>): Observable<Vehicle> {
+  create(vehicule: Omit<Vehicule, 'id'>): Observable<Vehicule> {
     return this.apollo
-      .mutate<{ createVehicle: Vehicle }>({
+      .mutate<{ createVehicule: Vehicule }>({
         mutation: gql`
-          mutation CreateVehicle(
-            $plateNumber: String!
-            $brand: String!
-            $model: String!
-            $status: String!
+          mutation CreateVehicule(
+            $immatriculation: String!
+            $marque: String!
+            $modele: String!
+            $statut: String!
           ) {
-            createVehicle(
-              plateNumber: $plateNumber
-              brand: $brand
-              model: $model
-              status: $status
+            createVehicule(
+              immatriculation: $immatriculation
+              marque: $marque
+              modele: $modele
+              statut: $statut
             ) {
               id
-              plateNumber
-              brand
-              model
-              status
+              immatriculation
+              marque
+              modele
+              statut
             }
           }
         `,
-        variables: { ...vehicle },
+        variables: { ...vehicule },
       })
       .pipe(
         map((res) => {
-          if (!res.data?.createVehicle) {
-            throw new Error('Vehicle creation failed');
+          if (!res.data?.createVehicule) {
+            throw new Error('Échec de la création du véhicule');
           }
-          return res.data.createVehicle;
+          return res.data.createVehicule;
         }),
       );
   }
@@ -113,37 +113,37 @@ export class ServiceVehicules {
   /**
    * Met à jour un véhicule existant
    */
-  update(id: string, vehicle: Partial<Vehicle>): Observable<Vehicle> {
+  update(id: string, vehicule: Partial<Vehicule>): Observable<Vehicule> {
     return this.apollo
-      .mutate<{ updateVehicle: Vehicle }>({
+      .mutate<{ updateVehicule: Vehicule }>({
         mutation: gql`
-          mutation UpdateVehicle(
+          mutation UpdateVehicule(
             $id: ID!
-            $plateNumber: String
-            $brand: String
-            $model: String
-            $status: String
+            $immatriculation: String
+            $marque: String
+            $modele: String
+            $statut: String
           ) {
-            updateVehicle(
+            updateVehicule(
               id: $id
-              plateNumber: $plateNumber
-              brand: $brand
-              model: $model
-              status: $status
+              immatriculation: $immatriculation
+              marque: $marque
+              modele: $modele
+              statut: $statut
             ) {
               id
-              status
+              statut
             }
           }
         `,
-        variables: { id, ...vehicle },
+        variables: { id, ...vehicule },
       })
       .pipe(
         map((res) => {
-          if (!res.data?.updateVehicle) {
-            throw new Error('Vehicle update failed');
+          if (!res.data?.updateVehicule) {
+            throw new Error('Échec de la mise à jour du véhicule');
           }
-          return res.data.updateVehicle;
+          return res.data.updateVehicule;
         }),
       );
   }
@@ -154,8 +154,8 @@ export class ServiceVehicules {
   delete(id: string): Observable<any> {
     return this.apollo.mutate({
       mutation: gql`
-        mutation DeleteVehicle($id: ID!) {
-          deleteVehicle(id: $id)
+        mutation DeleteVehicule($id: ID!) {
+          deleteVehicule(id: $id)
         }
       `,
       variables: { id },

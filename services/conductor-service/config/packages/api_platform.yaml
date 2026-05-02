@@ -7,3 +7,9 @@ api_platform:
             vary: ["Content-Type", "Authorization", "Origin"]
     graphql:
         enabled: false
+    mapping:
+        paths:
+            - "%kernel.project_dir%/src/Entity"
+    formats:
+        jsonld: ["application/ld+json"]
+        json: ["application/json"]

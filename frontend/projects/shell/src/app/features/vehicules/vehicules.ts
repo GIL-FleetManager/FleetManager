@@ -1,7 +1,8 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ServiceVehicules, Vehicle } from './services/service-vehicules';
+// Assurez-vous que votre service exporte bien l'interface "Vehicule" avec les attributs en français
+import { ServiceVehicules, Vehicule } from './services/service-vehicules'; 
 import { Subscription } from 'rxjs';
 
 type ModalMode = 'create' | 'edit' | null;
@@ -17,8 +18,8 @@ export class Vehicules implements OnInit, OnDestroy {
   private readonly svc = inject(ServiceVehicules);
   private readonly eventSub?: Subscription;
 
-  // State Management with Signals
-  vehicles = signal<Vehicle[]>([]);
+  // Gestion d'état avec les Signals
+  vehicules = signal<Vehicule[]>([]);
   isLoading = signal(true);
   error = signal('');
   search = signal('');
@@ -28,18 +29,19 @@ export class Vehicules implements OnInit, OnDestroy {
 
   toast = signal<{ msg: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
-  form: Omit<Vehicle, 'id'> = { plateNumber: '', brand: '', model: '', status: 'available' };
+  // Initialisation du formulaire avec les clés en français
+  form: Omit<Vehicule, 'id'> = { immatriculation: '', marque: '', modele: '', statut: 'disponible' };
   editingId: string | null = null;
 
-  statuts: Vehicle['status'][] = ['available', 'in_mission', 'broken', 'maintenance'];
+  statuts: Vehicule['statut'][] = ['disponible', 'en_mission', 'en_panne', 'en_maintenance'];
 
   filtered = computed(() => {
     const q = this.search().toLowerCase();
-    return this.vehicles().filter(
+    return this.vehicules().filter(
       (v) =>
-        v.plateNumber?.toLowerCase().includes(q) ||
-        v.brand?.toLowerCase().includes(q) ||
-        v.model?.toLowerCase().includes(q),
+        v.immatriculation?.toLowerCase().includes(q) ||
+        v.marque?.toLowerCase().includes(q) ||
+        v.modele?.toLowerCase().includes(q),
     );
   });
 
@@ -55,40 +57,40 @@ export class Vehicules implements OnInit, OnDestroy {
   }
 
   /**
-   * TODO:: Event Service  Integration
-   * Placeholder to listen for Kafka alerts via GraphQL Subscriptions or WebSockets
+   * TODO:: Intégration du Service d'Évènements
+   * Espace réservé pour écouter les alertes Kafka via GraphQL Subscriptions ou WebSockets
    */
   setupRealTimeEvents(): void {
-    console.log('Listening for events from Python Service...');
+    console.log('Écoute des évènements depuis le service Python...');
   }
 
   load(): void {
     this.isLoading.set(true);
     this.svc.getAll().subscribe({
       next: (data) => {
-        this.vehicles.set(data);
+        this.vehicules.set(data);
         this.isLoading.set(false);
       },
       error: (err) => {
-        console.error('GraphQL Error:', err);
-        this.error.set('Erreur lors du chargement via le Gateway');
+        console.error('Erreur GraphQL:', err);
+        this.error.set('Erreur lors du chargement via la Gateway');
         this.isLoading.set(false);
       },
     });
   }
 
   openCreate(): void {
-    this.form = { plateNumber: '', brand: '', model: '', status: 'available' };
+    this.form = { immatriculation: '', marque: '', modele: '', statut: 'disponible' };
     this.editingId = null;
     this.modalMode.set('create');
   }
 
-  openEdit(v: Vehicle): void {
+  openEdit(v: Vehicule): void {
     this.form = {
-      plateNumber: v.plateNumber,
-      brand: v.brand,
-      model: v.model,
-      status: v.status,
+      immatriculation: v.immatriculation,
+      marque: v.marque,
+      modele: v.modele,
+      statut: v.statut,
     };
     this.editingId = v.id!;
     this.modalMode.set('edit');
@@ -111,7 +113,7 @@ export class Vehicules implements OnInit, OnDestroy {
         this.saving.set(false);
       },
       error: (err) => {
-        console.error('Mutation Error:', err);
+        console.error('Erreur de Mutation:', err);
         this.showToast("Erreur d'enregistrement (GraphQL)", 'error');
         this.saving.set(false);
       },

@@ -18,7 +18,7 @@
     <span class="search-icon">🔍</span>
     <input
       type="text"
-      placeholder="Rechercher par plateNumber, brand, modèle..."
+      placeholder="Rechercher par Immatriculation, Marque, Modèle..."
       [ngModel]="search()"
       (ngModelChange)="search.set($event)"
     />
@@ -38,10 +38,10 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>plateNumber</th>
-            <th>brand</th>
+            <th>Immatriculation</th>
+            <th>Marque</th>
             <th>Modèle</th>
-            <th>status</th>
+            <th>statut</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -49,13 +49,13 @@
           @for (v of filtered(); track v.id) {
             <tr>
               <td>
-                <strong class="immat">{{ v.plateNumber }}</strong>
+                <strong class="immat">{{ v.immatriculation }}</strong>
               </td>
-              <td>{{ v.brand }}</td>
-              <td>{{ v.model }}</td>
+              <td>{{ v.marque }}</td>
+              <td>{{ v.modele }}</td>
               <td>
-                <span class="badge" [class]="statutClass(v.status!)">
-                  {{ statutLabel(v.status!) }}
+                <span class="badge" [class]="statutClass(v.statut!)">
+                  {{ statutLabel(v.statut!) }}
                 </span>
               </td>
               <td class="actions">
@@ -85,22 +85,22 @@
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label>plateNumber *</label>
-            <input type="text" [(ngModel)]="form.plateNumber" placeholder="Ex: AB-123-CD" />
+            <label>Immatriculation *</label>
+            <input type="text" [(ngModel)]="form.immatriculation" placeholder="Ex: AB-123-CD" />
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>brand *</label>
-              <input type="text" [(ngModel)]="form.brand" placeholder="Ex: Renault" />
+              <label>Marque *</label>
+              <input type="text" [(ngModel)]="form.marque" placeholder="Ex: Renault" />
             </div>
             <div class="form-group">
               <label>Modèle *</label>
-              <input type="text" [(ngModel)]="form.model" placeholder="Ex: Clio" />
+              <input type="text" [(ngModel)]="form.modele" placeholder="Ex: Clio" />
             </div>
           </div>
           <div class="form-group">
-            <label>status</label>
-            <select [(ngModel)]="form.status">
+            <label>statut</label>
+            <select [(ngModel)]="form.statut">
               @for (s of statuts; track s) {
                 <option [value]="s">{{ statutLabel(s!) }}</option>
               }

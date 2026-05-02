@@ -1,9 +1,9 @@
-type Vehicle {
+type Vehicule {
   id: ID!
-  plateNumber: String
-  brand: String
-  model: String
-  status: String
+  immatriculation: String
+  marque: String
+  modele: String
+  statut: String
   location: GpsPoint
 }
 
@@ -14,17 +14,67 @@ type GpsPoint {
   timestamp: String
 }
 
+type Conducteur {
+  id: ID!
+  nom: String!
+  prenom: String!
+  email: String!
+  telephone: String
+  numero_permis: String!
+  date_expiration_permis: String!
+  statut: String
+  created_at: String
+  updated_at: String
+}
+
 type Query {
-  vehicles: [Vehicle]
-  getVehicle(id: ID!): Vehicle
+  vehicules: [Vehicule]
+  getVehicule(id: ID!): Vehicule
+
+  conducteurs: [Conducteur]
+  getConducteur(id: ID!): Conducteur
+
   health: String
 }
 
 type Mutation {
-  createVehicle(
-    plateNumber: String!
-    brand: String!
-    model: String!
-    status: String!
-  ): Vehicle
+  createVehicule(
+    immatriculation: String!
+    marque: String!
+    modele: String!
+    statut: String!
+  ): Vehicule
+
+  updateVehicule(
+    id: ID!
+    immatriculation: String
+    marque: String
+    modele: String
+    statut: String
+  ): Vehicule
+
+  deleteVehicule(id: ID!): Boolean
+
+  createConducteur(
+    nom: String!
+    prenom: String!
+    email: String!
+    telephone: String
+    numero_permis: String!
+    date_expiration_permis: String!
+    statut: String
+  ): Conducteur
+
+  updateConducteur(
+    id: ID!
+    nom: String
+    prenom: String
+    email: String
+    telephone: String
+    numero_permis: String
+    date_expiration_permis: String
+    statut: String
+  ): Conducteur
+
+  deleteConducteur(id: ID!): Boolean
 }
