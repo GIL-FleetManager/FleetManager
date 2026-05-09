@@ -6,6 +6,7 @@ const path = require("node:path");
 
 const vehiculeResolvers = require("./resolvers/vehicle-resolvers");
 const conducteurResolvers = require("./resolvers/conductor-resolvers");
+const maintenanceResolvers = require("./resolvers/maintenance-resolvers");
 
 const typeDefs = fs.readFileSync(
   path.join(__dirname, "schema.graphql"),
@@ -33,10 +34,12 @@ const resolvers = {
     health: () => "OK",
     ...vehiculeResolvers.Query,
     ...conducteurResolvers.Query,
+    ...maintenanceResolvers.Query,
   },
   Mutation: {
     ...vehiculeResolvers.Mutation,
     ...conducteurResolvers.Mutation,
+    ...maintenanceResolvers.Mutation,
   },
 };
 

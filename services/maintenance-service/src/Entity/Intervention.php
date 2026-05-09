@@ -17,9 +17,8 @@ class Intervention
     #[ORM\Column(type: 'string', length: 36)]
     private ?string $vehiculeId = null;
 
-    #[ORM\ManyToOne(targetEntity: Technician::class)]
-    #[ORM\JoinColumn(name: 'technicien_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
-    private ?Technician $technicien = null;
+    #[ORM\Column(type: 'string', length: 36, nullable: true)]
+    private ?string $technicienId = null;
 
     #[ORM\Column(type: 'string', length: 100)]
     private ?string $typeIntervention = null;
@@ -70,6 +69,17 @@ class Intervention
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 
+    public function getTechnicienId(): ?string
+    {
+        return $this->technicienId;
+    }
+
+    public function setTechnicienId(?string $technicienId): self
+    {
+        $this->technicienId = $technicienId;
+        return $this;
+    }
+
     public function getId(): ?string
     {
         return $this->id;
@@ -83,18 +93,6 @@ class Intervention
     public function setVehiculeId(string $vehiculeId): self
     {
         $this->vehiculeId = $vehiculeId;
-
-        return $this;
-    }
-
-    public function getTechnicien(): ?Technician
-    {
-        return $this->technicien;
-    }
-
-    public function setTechnicien(?Technician $technicien): self
-    {
-        $this->technicien = $technicien;
 
         return $this;
     }

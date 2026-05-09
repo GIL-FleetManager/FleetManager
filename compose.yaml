@@ -244,6 +244,11 @@ services:
   localization-service:
     build: ./services/localization-service
     container_name: fleet-localization-service
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=fleet-db-localization
+      - KAFKA_BROKER=kafka:9092
     ports:
       - "8084:8000"
     depends_on:
@@ -300,8 +305,6 @@ services:
       - ./frontend:/app:rw
       # Protège le dossier node_modules du conteneur pour éviter les conflits Windows/Linux
       - /app/node_modules
-
-      
 
 networks:
   fleet-network:

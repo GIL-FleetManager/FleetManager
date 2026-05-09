@@ -3,15 +3,15 @@
 namespace App\Controller;
 
 use App\Entity\Intervention;
-use App\Entity\Technician;
 use App\Repository\InterventionRepository;
-use App\Repository\TechnicianRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Messenger\MessageBusInterface;
+use App\Message\MaintenanceStatusChanged;
 
 #[Route('/api/interventions')]
 class InterventionController extends AbstractController
@@ -19,7 +19,7 @@ class InterventionController extends AbstractController
     public function __construct(
         private EntityManagerInterface $em,
         private InterventionRepository $interventionRepository,
-        private TechnicianRepository $technicianRepository,
+        private MessageBusInterface $bus
     ) {
     }
 
@@ -97,17 +97,16 @@ class InterventionController extends AbstractController
         $intervention->setDateRealisation(isset($body['date_realisation']) ? $this->parseDate($body['date_realisation']) : null);
         $intervention->setStatut($body['statut'] ?? 'planifie');
         $intervention->setDescription($body['description'] ?? null);
-
-        if (isset($body['technicien_id']) && $body['technicien_id'] !== null) {
-            $technician = $this->technicianRepository->find($body['technicien_id']);
-            if (!$technician instanceof Technician) {
-                return $this->json(['error' => 'Technicien non trouvé'], 400);
-            }
-            $intervention->setTechnicien($technician);
-        }
+        $intervention->setTechnicienId($body['technicien_id'] ?? null);
 
         $this->em->persist($intervention);
         $this->em->flush();
+
+        $this->bus->dispatch(new MaintenanceStatusChanged(
+            $intervention->getId(),
+            $intervention->getVehiculeId(),
+            $intervention->getStatut()
+        ));
 
         return $this->json($this->serialize($intervention), 201);
     }
@@ -131,6 +130,7 @@ class InterventionController extends AbstractController
             return $this->json(['error' => 'Intervention non trouvée'], Response::HTTP_NOT_FOUND);
         }
 
+        // $oldStatus = $intervention->getStatut();
         $body = json_decode($request->getContent(), true);
         if (!is_array($body)) {
             return $this->json(['error' => 'Invalid JSON'], 400);
@@ -160,25 +160,26 @@ class InterventionController extends AbstractController
                 $intervention->setDateRealisation($dateRealisation);
             }
         }
-        if (isset($body['statut'])) {
-            $intervention->setStatut($body['statut']);
-        }
+        
         if (array_key_exists('description', $body)) {
             $intervention->setDescription($body['description']);
         }
         if (array_key_exists('technicien_id', $body)) {
-            if ($body['technicien_id'] === null || $body['technicien_id'] === '') {
-                $intervention->setTechnicien(null);
-            } else {
-                $technician = $this->technicianRepository->find($body['technicien_id']);
-                if (!$technician instanceof Technician) {
-                    return $this->json(['error' => 'Technicien non trouvé'], 400);
-                }
-                $intervention->setTechnicien($technician);
-            }
+            $intervention->setTechnicienId($body['technicien_id'] === '' ? null : $body['technicien_id']);
+        }
+        if (isset($body['statut'])) {
+            $intervention->setStatut($body['statut']);
         }
 
         $this->em->flush();
+
+        
+        // kafka
+        $this->bus->dispatch(new MaintenanceStatusChanged(
+            $intervention->getId(),
+            $intervention->getVehiculeId(),
+            $intervention->getStatut()
+        ));
 
         return $this->json($this->serialize($intervention));
     }
@@ -212,7 +213,7 @@ class InterventionController extends AbstractController
         return [
             'id' => (string) $i->getId(),
             'vehicule_id' => $i->getVehiculeId(),
-            'technicien_id' => $i->getTechnicien()?->getId(),
+            'technicien_id' => $i->getTechnicienId(),
             'type_intervention' => $i->getTypeIntervention(),
             'date_planifiee' => $i->getDatePlanifiee()?->format('Y-m-d'),
             'date_realisation' => $i->getDateRealisation()?->format('Y-m-d'),

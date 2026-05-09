@@ -27,12 +27,28 @@ type Conducteur {
   updated_at: String
 }
 
+type Intervention {
+  id: ID!
+  vehicule_id: String!
+  technicien_id: String
+  type_intervention: String!
+  date_planifiee: String!
+  date_realisation: String
+  statut: String!
+  description: String
+  created_at: String
+  updated_at: String
+}
+
 type Query {
   vehicules: [Vehicule]
   getVehicule(id: ID!): Vehicule
 
   conducteurs: [Conducteur]
   getConducteur(id: ID!): Conducteur
+
+  interventions: [Intervention]
+  intervention(id: ID!): Intervention
 
   health: String
 }
@@ -77,4 +93,27 @@ type Mutation {
   ): Conducteur
 
   deleteConducteur(id: ID!): Boolean
+
+  createIntervention(
+    vehicule_id: String!
+    technicien_id: String
+    type_intervention: String!
+    date_planifiee: String!
+    date_realisation: String
+    statut: String
+    description: String
+  ): Intervention
+
+  updateIntervention(
+    id: ID!
+    vehicule_id: String
+    technicien_id: String
+    type_intervention: String
+    date_planifiee: String
+    date_realisation: String
+    statut: String
+    description: String
+  ): Intervention
+
+  deleteIntervention(id: ID!): Boolean
 }
