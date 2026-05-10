@@ -1,13 +1,22 @@
 <nav class="shell-nav">
   <div class="nav-brand">
-    <span class="nav-logo">🚗</span>
     <strong>FleetManager</strong>
   </div>
   <div class="nav-links">
     <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-    <a routerLink="/vehicules" routerLinkActive="active">Véhicules</a>
-    <a routerLink="/conducteurs" routerLinkActive="active">Conducteurs</a>
-    <a routerLink="/maintenance" routerLinkActive="active">Maintenance</a>
+    <a *appHasRole="['admin', 'manager']" routerLink="/vehicules" routerLinkActive="active"
+      >Véhicules</a
+    >
+    <a *appHasRole="['admin', 'manager']" routerLink="/conducteurs" routerLinkActive="active"
+      >Conducteurs</a
+    >
+    <a
+      *appHasRole="['admin', 'technicien', 'manager']"
+      routerLink="/maintenance"
+      routerLinkActive="active"
+      >Maintenance</a
+    >
+    <a *appHasRole="['admin', 'manager']" routerLink="/map" routerLinkActive="active">Carte</a>
   </div>
 </nav>
 

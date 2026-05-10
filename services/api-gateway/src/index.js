@@ -7,6 +7,7 @@ const path = require("node:path");
 const vehiculeResolvers = require("./resolvers/vehicle-resolvers");
 const conducteurResolvers = require("./resolvers/conductor-resolvers");
 const maintenanceResolvers = require("./resolvers/maintenance-resolvers");
+const localizationResolvers = require("./resolvers/localization-resolvers");
 
 const typeDefs = fs.readFileSync(
   path.join(__dirname, "schema.graphql"),
@@ -35,12 +36,14 @@ const resolvers = {
     ...vehiculeResolvers.Query,
     ...conducteurResolvers.Query,
     ...maintenanceResolvers.Query,
+    ...localizationResolvers.Query,
   },
   Mutation: {
     ...vehiculeResolvers.Mutation,
     ...conducteurResolvers.Mutation,
     ...maintenanceResolvers.Mutation,
   },
+  Vehicule: localizationResolvers.Vehicule,
 };
 
 const server = new ApolloServer({

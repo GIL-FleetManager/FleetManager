@@ -7,7 +7,7 @@
   <!-- Header -->
   <div class="page-header">
     <div>
-      <h1>🔧 Gestion de la Maintenance</h1>
+      <h1>Gestion de la Maintenance</h1>
       <p class="subtitle">{{ filtered().length }} intervention(s) trouvée(s)</p>
     </div>
     <button class="btn btn-primary" (click)="openCreate()">+ Nouvelle intervention</button>
@@ -59,8 +59,20 @@
                 </span>
               </td>
               <td class="actions">
-                <button class="btn-icon edit" (click)="openEdit(i)" title="Modifier">✏️</button>
-                <button class="btn-icon delete" (click)="confirmDelete(i.id)" title="Supprimer">
+                <button
+                  *appHasRole="['admin', 'manager']"
+                  class="btn-icon edit"
+                  (click)="openEdit(i)"
+                  title="Modifier"
+                >
+                  ✏️
+                </button>
+                <button
+                  *appHasRole="['admin', 'manager']"
+                  class="btn-icon delete"
+                  (click)="confirmDelete(i.id)"
+                  title="Supprimer"
+                >
                   🗑️
                 </button>
               </td>

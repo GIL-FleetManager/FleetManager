@@ -50,6 +50,8 @@ type Query {
   interventions: [Intervention]
   intervention(id: ID!): Intervention
 
+  getLastLocation(vehicleId: ID!): GpsPoint
+
   health: String
 }
 

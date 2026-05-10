@@ -31,11 +31,9 @@ spec:
                 name: global-fleet-config
           env:
             - name: KAFKA_BROKER
-              value: "fleet-kafka-kafka-bootstrap:9092"
-            - name: APP_ENV
-              value: "dev"
+              value: "fleet-kafka-kafka-bootstrap.fleet-manager.svc.cluster.local:9092"
             - name: DATABASE_URL
-              value: "postgresql://postgres:$(DB_PASSWORD)@fleet-db-postgresql.database.svc.cluster.local:5432/localization_db?serverVersion=16.0.0"
+              value: "postgres://postgres:$(DB_PASSWORD)@fleet-db-postgresql.database.svc.cluster.local:5432/localization_db?sslmode=disable"
 ---
 apiVersion: v1
 kind: Service

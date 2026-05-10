@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package location;
+
+option go_package = "github.com/GIL-FleetManager/FleetManager/pb";
+
+message GPSPosition {
+    string vehicle_id = 1;
+    double latitude = 2;
+    double longitude = 3;
+    float speed = 4;      
+    int64 timestamp = 5;
+}
+
+message StreamResponse {
+    int32 processed_count = 1;
+    bool success = 2;
+}
+
+message GetLocationRequest {
+    string vehicle_id = 1;
+}
+
+service LocationService {
+    rpc StreamPositions(stream GPSPosition) returns (StreamResponse);
+    rpc GetLastKnownLocation(GetLocationRequest) returns (GPSPosition);
+}

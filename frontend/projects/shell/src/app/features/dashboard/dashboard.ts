@@ -4,7 +4,6 @@ import { AdminWidgetsComponent } from './widgets/admin-widgets.component';
 import { ManagerWidgetsComponent } from './widgets/manager-widgets.component';
 import { TechnicianWidgetsComponent } from './widgets/technician-widgets.component';
 
-
 export type UserRole = 'admin' | 'manager' | 'technician' | 'unknown';
 
 @Component({
@@ -17,11 +16,14 @@ export type UserRole = 'admin' | 'manager' | 'technician' | 'unknown';
 export class DashboardComponent implements OnInit {
   private readonly keycloak = inject(KeycloakService);
 
-  readonly userName  = signal<string>('');
-  readonly userRole  = signal<UserRole>('unknown');
+  readonly userName = signal<string>('');
+  readonly userRole = signal<UserRole>('unknown');
   readonly isLoading = signal<boolean>(true);
   readonly currentDate = new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
 
   async ngOnInit(): Promise<void> {
@@ -30,11 +32,16 @@ export class DashboardComponent implements OnInit {
       const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ');
       this.userName.set(fullName || profile.username || 'Utilisateur');
 
-      const roles = this.keycloak.getUserRoles(true);
-      if (roles.includes('admin'))           this.userRole.set('admin');
-      else if (roles.includes('manager'))    this.userRole.set('manager');
-      else if (roles.includes('technician')) this.userRole.set('technician');
-      else                                   this.userRole.set('unknown');
+      const tokenParsed = this.keycloak.getKeycloakInstance().tokenParsed;
+      const realmRoles: string[] = tokenParsed?.realm_access?.roles ?? [];
+      const clientRoles: string[] = tokenParsed?.resource_access?.['ton-client-id']?.roles ?? [];
+      const roles = [...realmRoles, ...clientRoles];
+
+      console.log('User roles:', roles);
+      if (roles.includes('admin')) this.userRole.set('admin');
+      else if (roles.includes('manager')) this.userRole.set('manager');
+      else if (roles.includes('technicien')) this.userRole.set('technician');
+      else this.userRole.set('unknown');
     } catch {
       this.userName.set('Utilisateur');
       this.userRole.set('unknown');
@@ -56,5 +63,4 @@ export class DashboardComponent implements OnInit {
     };
     return labels[this.userRole()];
   }
-}
-
+}8

@@ -2,11 +2,12 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ServiceMaintenance, Intervention } from './services/service-maintenance';
+import { HasRoleDirective } from '../../has-role.directive';
 
 @Component({
   selector: 'app-maintenance',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HasRoleDirective],
   templateUrl: './maintenance.html',
   styleUrls: ['./maintenance.scss'],
 })

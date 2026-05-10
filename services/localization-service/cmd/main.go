@@ -107,24 +107,31 @@ func (s *server) GetLastKnownLocation(ctx context.Context, req *pb.GetLocationRe
 }
 
 func initDB() *sql.DB {
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	host := os.Getenv("DB_HOST")
+	databaseURL := os.Getenv("DATABASE_URL")
 
-	if host == "" {
-		host = "fleet-db-localization"
+	if databaseURL == "" {
+		user := os.Getenv("DB_USER")
+		password := os.Getenv("DB_PASSWORD")
+		host := os.Getenv("DB_HOST")
+		if host == "" {
+			host = "fleet-db-postgresql.database.svc.cluster.local"
+		}
+		databaseURL = fmt.Sprintf("postgres://%s:%s@%s:5432/localization_db?sslmode=disable",
+			user, password, host)
 	}
 
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/localization_db?sslmode=disable",
-		user, password, host)
-
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to ping database: %v", err)
+	}
+
+	log.Printf("✅ Connected to database")
 	return db
 }
-
 func main() {
 	db := initDB()
 	defer db.Close()

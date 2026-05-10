@@ -1,4 +1,5 @@
 const axios = require("axios");
+const localizationResolvers = require("./localization-resolvers");
 
 const vehicleResolvers = {
   Query: {
@@ -23,6 +24,9 @@ const vehicleResolvers = {
         console.error("Vehicle Service Error:", error.message);
         throw new Error("Vehicle service unreachable or data not found");
       }
+    },
+    getLastLocation: async (_, { vehicleId }) => {
+      return localizationResolvers.Query.getLastLocation(null, { vehicleId });
     },
   },
   Mutation: {
