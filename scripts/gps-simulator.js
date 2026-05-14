@@ -78,10 +78,10 @@ function simulateVehicle(vehicle) {
 
   const stream = client.StreamPositions((err, response) => {
     if (err) {
-      console.error(`❌ [${vehicle.name}] Stream error:`, err.message);
+      console.error(`[${vehicle.name}] Stream error:`, err.message);
     } else {
       console.log(
-        `✅ [${vehicle.name}] Stream closed. Processed: ${response.processed_count}`,
+        `[${vehicle.name}] Stream closed. Processed: ${response.processed_count}`,
       );
     }
   });
@@ -119,8 +119,8 @@ function simulateVehicle(vehicle) {
 }
 
 async function main() {
-  console.log(`🚗 GPS Simulator connecting to ${SERVICE_URL}`);
-  console.log(`📡 Simulating ${VEHICLES.length} vehicles, 10 positions each\n`);
+  console.log(`GPS Simulator connecting to ${SERVICE_URL}`);
+  console.log(`Simulating ${VEHICLES.length} vehicles, 10 positions each\n`);
 
   // Stagger vehicle starts
   VEHICLES.forEach((vehicle, i) => {
@@ -129,7 +129,7 @@ async function main() {
 
   // Keep alive until all streams finish
   await new Promise((resolve) => setTimeout(resolve, 10000));
-  console.log("\n✅ Simulation complete");
+  console.log("\nSimulation complete");
 }
 
 main().catch(console.error);
