@@ -16,6 +16,8 @@ use App\Message\MaintenanceStatusChanged;
 #[Route('/api/interventions')]
 class InterventionController extends AbstractController
 {
+    use RoleCheckTrait;
+
     public function __construct(
         private EntityManagerInterface $em,
         private InterventionRepository $interventionRepository,
@@ -74,6 +76,11 @@ class InterventionController extends AbstractController
     #[Route('', name: 'interventions_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $roleCheck = $this->canCreate($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $body = json_decode($request->getContent(), true);
         if (!is_array($body)) {
             return $this->json(['error' => 'Invalid JSON'], 400);
@@ -125,6 +132,11 @@ class InterventionController extends AbstractController
     #[Route('/{id}', name: 'interventions_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
+        $roleCheck = $this->canUpdate($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $intervention = $this->interventionRepository->find($id);
         if (!$intervention) {
             return $this->json(['error' => 'Intervention non trouvée'], Response::HTTP_NOT_FOUND);
@@ -185,8 +197,13 @@ class InterventionController extends AbstractController
     }
 
     #[Route('/{id}', name: 'interventions_delete', methods: ['DELETE'])]
-    public function delete(string $id): JsonResponse
+    public function delete(string $id, Request $request): JsonResponse
     {
+        $roleCheck = $this->canDelete($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $intervention = $this->interventionRepository->find($id);
         if (!$intervention) {
             return $this->json(['error' => 'Intervention non trouvée'], Response::HTTP_NOT_FOUND);

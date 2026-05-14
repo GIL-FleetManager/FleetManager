@@ -33,7 +33,6 @@
   } @else if (error()) {
     <div class="error-state">⚠️ {{ error() }}</div>
   } @else {
-    <!-- Table -->
     <div class="table-card">
       <table class="data-table">
         <thead>
@@ -61,6 +60,9 @@
                 </span>
               </td>
               <td class="actions">
+                <button class="btn-icon" (click)="openAssign(c)" title="Assigner un véhicule">
+                  🚗
+                </button>
                 <button class="btn-icon edit" (click)="openEdit(c)" title="Modifier">✏️</button>
                 <button class="btn-icon delete" (click)="confirmDelete(c.id!)" title="Supprimer">
                   🗑️
@@ -74,6 +76,69 @@
           }
         </tbody>
       </table>
+    </div>
+  }
+
+  <!-- Modal Assignation Véhicule -->
+  @if (assignModal()) {
+    <div class="modal-overlay" (click)="closeAssignModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>🚗 Assigner un véhicule</h2>
+          <button class="close-btn" (click)="closeAssignModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="assign-conductor-name">
+            Conducteur : <strong>{{ assignModal()!.prenom }} {{ assignModal()!.nom }}</strong>
+          </p>
+
+          <!-- Assignation actuelle -->
+          @if (currentAssignment()) {
+            <div class="current-assignment">
+              <span class="label">Véhicule actuel :</span>
+              <span class="badge badge-info">
+                {{ getVehiculeLabel(currentAssignment()!.vehicle_id) }}
+              </span>
+              <button
+                class="btn btn-danger btn-sm"
+                (click)="doUnassign()"
+                [disabled]="assignSaving()"
+              >
+                {{ assignSaving() ? '...' : 'Désassigner' }}
+              </button>
+            </div>
+          } @else {
+            <p class="no-assignment">Aucun véhicule actuellement assigné.</p>
+          }
+
+          <!-- Dropdown nouveau véhicule -->
+          <div class="form-group" style="margin-top: 1rem">
+            <label>{{
+              currentAssignment() ? 'Changer de véhicule' : 'Assigner un véhicule'
+            }}</label>
+            <select [ngModel]="selectedVehicleId()" (ngModelChange)="selectedVehicleId.set($event)">
+              <option value="">— Sélectionner un véhicule —</option>
+              @for (v of vehicules(); track v.id) {
+                @if (v.statut === 'disponible') {
+                  <option [value]="v.id">
+                    {{ v.immatriculation }} — {{ v.marque }} {{ v.modele }}
+                  </option>
+                }
+              }
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeAssignModal()">Fermer</button>
+          <button
+            class="btn btn-primary"
+            (click)="doAssign()"
+            [disabled]="assignSaving() || !selectedVehicleId()"
+          >
+            {{ assignSaving() ? 'Assignation...' : 'Assigner' }}
+          </button>
+        </div>
+      </div>
     </div>
   }
 
@@ -98,7 +163,6 @@
               <input type="text" [(ngModel)]="form.prenom" placeholder="Ex: Jean" />
             </div>
           </div>
-
           <div class="form-row">
             <div class="form-group">
               <label>Email *</label>
@@ -109,7 +173,6 @@
               <input type="text" [(ngModel)]="form.telephone" placeholder="06..." />
             </div>
           </div>
-
           <div class="form-row">
             <div class="form-group">
               <label>Numéro de Permis *</label>
@@ -120,7 +183,6 @@
               <input type="date" [(ngModel)]="form.date_expiration_permis" />
             </div>
           </div>
-
           <div class="form-group">
             <label>Statut</label>
             <select [(ngModel)]="form.statut">

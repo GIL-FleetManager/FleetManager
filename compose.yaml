@@ -12,7 +12,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,7 +29,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -46,7 +46,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -63,7 +63,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -80,7 +80,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d fleetmanager"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -97,7 +97,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d keycloak_db" ]
+      test: ["CMD-SHELL", "pg_isready -U user -d keycloak_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -124,11 +124,10 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test:
-        [
+      test: [
           "CMD-SHELL",
           "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server
-            localhost:9092",
+          localhost:9092",
         ]
       interval: 15s
       timeout: 10s
@@ -169,6 +168,7 @@ services:
       - APP_SECRET=${APP_SECRET}
       - CORS_ALLOW_ORIGIN=*
       - DEFAULT_URI=${DEFAULT_URI}
+      - KAFKA_BROKERS=kafka:9092
       - ENQUEUE_DSN=kafka://kafka:9092
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-vehicle:5432/fleetmanager?serverVersion=16
     ports:
@@ -179,7 +179,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost/api" ]
+      test: ["CMD", "curl", "-f", "http://localhost/api"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -197,6 +197,7 @@ services:
       - APP_SECRET=${APP_SECRET}
       - CORS_ALLOW_ORIGIN=*
       - DEFAULT_URI=${DEFAULT_URI}
+      - KAFKA_BROKERS=kafka:9092
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-conductor:5432/fleetmanager?serverVersion=16
     ports:
       - "8082:80"
@@ -206,7 +207,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost/api" ]
+      test: ["CMD", "curl", "-f", "http://localhost/api"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -224,6 +225,7 @@ services:
       - APP_SECRET=${APP_SECRET}
       - CORS_ALLOW_ORIGIN=*
       - DEFAULT_URI=${DEFAULT_URI}
+      - KAFKA_BROKERS=kafka:9092
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-maintenance:5432/fleetmanager?serverVersion=16
     ports:
       - "8083:80"
@@ -233,7 +235,7 @@ services:
     networks:
       - fleet-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost/api" ]
+      test: ["CMD", "curl", "-f", "http://localhost/api"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -262,6 +264,9 @@ services:
     container_name: fleet-event-service
     ports:
       - "8085:8000"
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@fleet-db-event:5432/fleetmanager?serverVersion=16
     depends_on:
       db-event:
         condition: service_healthy

@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ServiceMaintenance, Intervention } from './services/service-maintenance';
+import { ServiceMaintenance, Intervention, Technicien, Vehicule } from './services/service-maintenance';
 import { HasRoleDirective } from '../../has-role.directive';
 
 @Component({
@@ -12,8 +12,10 @@ import { HasRoleDirective } from '../../has-role.directive';
   styleUrls: ['./maintenance.scss'],
 })
 export class Maintenance implements OnInit {
-  // Signals for state management
   interventions = signal<Intervention[]>([]);
+  techniciens = signal<Technicien[]>([]);
+  vehicules = signal<Vehicule[]>([]);
+
   search = signal('');
   isLoading = signal(true);
   error = signal<string | null>(null);
@@ -22,27 +24,47 @@ export class Maintenance implements OnInit {
   deleteId = signal<string | null>(null);
   toast = signal<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  // Form State
-  form = { id: '', vehicule_id: '', type_intervention: '', statut: 'planifie', date_planifiee: '' };
+  form = {
+    id: '',
+    vehicule_id: '',
+    technicien_id: '' as string | null,
+    type_intervention: '',
+    statut: 'planifie',
+    date_planifiee: '',
+  };
+
   statuts = ['planifie', 'en_cours', 'termine', 'annule'];
 
-  // Computed signal for the search bar
   filtered = computed(() => {
     const s = this.search().toLowerCase();
     return this.interventions().filter(
       (i) =>
-        i.vehicule_id?.toLowerCase().includes(s) || i.type_intervention?.toLowerCase().includes(s),
+        i.vehicule_id?.toLowerCase().includes(s) ||
+        i.type_intervention?.toLowerCase().includes(s) ||
+        this.getVehiculeLabel(i.vehicule_id).toLowerCase().includes(s),
     );
   });
 
   constructor(private readonly maintenanceService: ServiceMaintenance) {}
 
   ngOnInit() {
-    this.loadInterventions();
+    this.loadAll();
   }
 
-  loadInterventions() {
+  loadAll() {
     this.isLoading.set(true);
+
+    // Load techniciens and vehicules for dropdowns
+    this.maintenanceService.getVehicules().subscribe({
+      next: (data) => this.vehicules.set(data),
+      error: () => {},
+    });
+
+    this.maintenanceService.getTechniciens().subscribe({
+      next: (data) => this.techniciens.set(data),
+      error: () => {},
+    });
+
     this.maintenanceService.getInterventions().subscribe({
       next: (data) => {
         this.interventions.set(data);
@@ -56,12 +78,26 @@ export class Maintenance implements OnInit {
     });
   }
 
+  // --- Lookup helpers ---
+
+  getVehiculeLabel(vehiculeId: string): string {
+    const v = this.vehicules().find((v) => v.id === vehiculeId);
+    return v ? `${v.immatriculation} — ${v.marque} ${v.modele}` : vehiculeId;
+  }
+
+  getTechnicienLabel(technicienId?: string | null): string {
+    if (!technicienId) return '—';
+    const t = this.techniciens().find((t) => t.id === technicienId);
+    return t ? `${t.prenom} ${t.nom}` : '—';
+  }
+
   // --- Modal & Form Logic ---
 
   openCreate() {
     this.form = {
       id: '',
       vehicule_id: '',
+      technicien_id: null,
       type_intervention: '',
       statut: 'planifie',
       date_planifiee: '',
@@ -70,7 +106,14 @@ export class Maintenance implements OnInit {
   }
 
   openEdit(intervention: Intervention) {
-    this.form = { ...intervention };
+    this.form = {
+      id: intervention.id,
+      vehicule_id: intervention.vehicule_id,
+      technicien_id: intervention.technicien_id ?? null,
+      type_intervention: intervention.type_intervention,
+      statut: intervention.statut,
+      date_planifiee: intervention.date_planifiee,
+    };
     this.modalMode.set('edit');
   }
 
@@ -85,13 +128,16 @@ export class Maintenance implements OnInit {
     }
 
     this.saving.set(true);
+    const techId = this.form.technicien_id || null;
 
     if (this.modalMode() === 'create') {
       this.maintenanceService
         .createIntervention(
           this.form.vehicule_id,
+          techId,
           this.form.type_intervention,
           this.form.date_planifiee,
+          this.form.statut,
         )
         .subscribe({
           next: (newIntervention) => {
@@ -107,14 +153,35 @@ export class Maintenance implements OnInit {
           },
         });
     } else {
-      // Future Update Logic goes here
-      this.showToast('Modification non implémentée pour le moment.', 'info' as any);
-      this.saving.set(false);
-      this.closeModal();
+      this.maintenanceService
+        .updateIntervention(
+          this.form.id,
+          this.form.vehicule_id,
+          techId,
+          this.form.type_intervention,
+          this.form.date_planifiee,
+          this.form.statut,
+        )
+        .subscribe({
+          next: (updated) => {
+            this.interventions.update((list) =>
+              list.map((i) => (i.id === updated.id ? updated : i)),
+            );
+            this.showToast('Intervention modifiée avec succès !', 'success');
+            this.saving.set(false);
+            this.closeModal();
+          },
+          error: (err) => {
+            console.error(err);
+            this.showToast('Erreur lors de la modification.', 'error');
+            this.saving.set(false);
+          },
+        });
     }
   }
 
-  // --- Delete Logic (UI Only for now) ---
+  // --- Delete Logic ---
+
   confirmDelete(id: string) {
     this.deleteId.set(id);
   }
@@ -124,10 +191,18 @@ export class Maintenance implements OnInit {
   }
 
   doDelete() {
-    // Future Delete Logic goes here
-    this.interventions.update((list) => list.filter((i) => i.id !== this.deleteId()));
-    this.showToast('Intervention supprimée.', 'success');
-    this.deleteId.set(null);
+    const id = this.deleteId()!;
+    this.maintenanceService.deleteIntervention(id).subscribe({
+      next: () => {
+        this.interventions.update((list) => list.filter((i) => i.id !== id));
+        this.showToast('Intervention supprimée.', 'success');
+        this.deleteId.set(null);
+      },
+      error: () => {
+        this.showToast('Erreur lors de la suppression.', 'error');
+        this.deleteId.set(null);
+      },
+    });
   }
 
   // --- UI Helpers ---

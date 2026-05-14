@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Conductor;
+use App\Entity\ConductorVehicleAssignment;
 use App\Repository\ConductorRepository;
+use App\Repository\ConductorVehicleAssignmentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,9 +16,12 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/conductors')]
 class ConductorController extends AbstractController
 {
+    use RoleCheckTrait;
+
     public function __construct(
         private EntityManagerInterface $em,
         private ConductorRepository $conductorRepository,
+        private ConductorVehicleAssignmentRepository $assignmentRepository,
     ) {
     }
 
@@ -32,6 +37,11 @@ class ConductorController extends AbstractController
     #[Route('', name: 'conductors_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $roleCheck = $this->canCreate($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $body = json_decode($request->getContent(), true);
         if (!is_array($body)) {
             return $this->json(['error' => 'Invalid JSON'], 400);
@@ -77,6 +87,11 @@ class ConductorController extends AbstractController
     #[Route('/{id}', name: 'conductors_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
+        $roleCheck = $this->canUpdate($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $conductor = $this->conductorRepository->find($id);
         if (!$conductor) {
             return $this->json(['error' => 'Conducteur non trouvé'], Response::HTTP_NOT_FOUND);
@@ -119,8 +134,13 @@ class ConductorController extends AbstractController
     }
 
     #[Route('/{id}', name: 'conductors_delete', methods: ['DELETE'])]
-    public function delete(string $id): JsonResponse
+    public function delete(string $id, Request $request): JsonResponse
     {
+        $roleCheck = $this->canDelete($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $conductor = $this->conductorRepository->find($id);
         if (!$conductor) {
             return $this->json(['error' => 'Conducteur non trouvé'], Response::HTTP_NOT_FOUND);
@@ -130,6 +150,103 @@ class ConductorController extends AbstractController
         $this->em->flush();
 
         return $this->json(['message' => 'Conducteur supprimé'], Response::HTTP_OK);
+    }
+
+    #[Route('/{conductorId}/assign-vehicle', name: 'conductor_assign_vehicle', methods: ['POST'])]
+    public function assignVehicle(string $conductorId, Request $request): JsonResponse
+    {
+        $roleCheck = $this->canUpdate($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
+        $conductor = $this->conductorRepository->find($conductorId);
+        if (!$conductor) {
+            return $this->json(['error' => 'Conducteur non trouvé'], Response::HTTP_NOT_FOUND);
+        }
+
+        $body = json_decode($request->getContent(), true);
+        if (!is_array($body) || !isset($body['vehicle_id'])) {
+            return $this->json(['error' => 'Missing required field: vehicle_id'], 400);
+        }
+
+        $vehicleId = $body['vehicle_id'];
+
+        // Check if there's already an active assignment
+        $existing = $this->assignmentRepository->findActiveAssignment($conductorId, $vehicleId);
+        if ($existing) {
+            return $this->json(['error' => 'This conductor is already assigned to this vehicle'], 400);
+        }
+
+        // Unassign from previous vehicle if needed
+        if ($body['unassign_previous'] ?? false) {
+            $previousAssignment = $this->assignmentRepository->findCurrentVehicle($conductorId);
+            if ($previousAssignment) {
+                $previousAssignment->setStatus('inactive');
+                $previousAssignment->setUnassignedAt(new \DateTimeImmutable());
+            }
+        }
+
+        // Create new assignment
+        $assignment = new ConductorVehicleAssignment();
+        $assignment->setConductorId($conductorId);
+        $assignment->setVehicleId($vehicleId);
+        $assignment->setStatus('active');
+
+        $this->em->persist($assignment);
+        $this->em->flush();
+
+        return $this->json($this->serializeAssignment($assignment), 201);
+    }
+
+    #[Route('/assignments/{assignmentId}/unassign', name: 'conductor_unassign_vehicle', methods: ['POST'])]
+    public function unassignVehicle(string $assignmentId, Request $request): JsonResponse
+    {
+        $roleCheck = $this->canUpdate($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
+        $assignment = $this->assignmentRepository->find($assignmentId);
+        if (!$assignment) {
+            return $this->json(['error' => 'Assignment not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $assignment->setStatus('inactive');
+        $assignment->setUnassignedAt(new \DateTimeImmutable());
+
+        $this->em->flush();
+
+        return $this->json($this->serializeAssignment($assignment));
+    }
+
+    #[Route('/{conductorId}/current-vehicle', name: 'conductor_get_current_vehicle', methods: ['GET'])]
+    public function getCurrentVehicle(string $conductorId): JsonResponse
+    {
+        $conductor = $this->conductorRepository->find($conductorId);
+        if (!$conductor) {
+            return $this->json(['error' => 'Conducteur non trouvé'], Response::HTTP_NOT_FOUND);
+        }
+
+        $assignment = $this->assignmentRepository->findCurrentVehicle($conductorId);
+        if (!$assignment) {
+            return $this->json(['vehicle_id' => null, 'message' => 'No active assignment']);
+        }
+
+        return $this->json($this->serializeAssignment($assignment));
+    }
+
+    private function serializeAssignment(ConductorVehicleAssignment $assignment): array
+    {
+        return [
+            'id' => $assignment->getId(),
+            'conductor_id' => $assignment->getConductorId(),
+            'vehicle_id' => $assignment->getVehicleId(),
+            'assigned_at' => $assignment->getAssignedAt()?->format(DATE_ATOM),
+            'unassigned_at' => $assignment->getUnassignedAt()?->format(DATE_ATOM),
+            'status' => $assignment->getStatus(),
+            'created_at' => $assignment->getCreatedAt()?->format(DATE_ATOM),
+        ];
     }
 
     private function parseDate(string $value): ?\DateTimeImmutable

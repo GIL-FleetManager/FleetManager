@@ -151,6 +151,64 @@ const conducteurResolvers = {
         throw new Error("Could not delete conducteur");
       }
     },
+    assignVehicleToConductor: async (
+      _,
+      { conductor_id, vehicle_id, unassign_previous },
+    ) => {
+      try {
+        const res = await axios({
+          method: "post",
+          url: `${CONDUCTOR_API}/${conductor_id}/assign-vehicle`,
+          data: {
+            vehicle_id,
+            unassign_previous: unassign_previous ?? true,
+          },
+        });
+        const d = res.data;
+        return {
+          id: d.id,
+          conductor_id: d.conductor_id,
+          vehicle_id: d.vehicle_id,
+          assigned_at: d.assigned_at,
+          unassigned_at: d.unassigned_at,
+          status: d.status,
+          created_at: d.created_at,
+        };
+      } catch (error) {
+        console.error(
+          "Assign Vehicle Error:",
+          error.response?.data || error.message,
+        );
+        throw new Error(
+          error.response?.data?.error ||
+            "Could not assign vehicle to conductor",
+        );
+      }
+    },
+    unassignVehicleFromConductor: async (_, { assignment_id }) => {
+      try {
+        const res = await axios({
+          method: "post",
+          url: `${CONDUCTOR_API}/assignments/${assignment_id}/unassign`,
+        });
+        const d = res.data;
+        return {
+          id: d.id,
+          conductor_id: d.conductor_id,
+          vehicle_id: d.vehicle_id,
+          assigned_at: d.assigned_at,
+          unassigned_at: d.unassigned_at,
+          status: d.status,
+          created_at: d.created_at,
+        };
+      } catch (error) {
+        console.error(
+          "Unassign Vehicle Error:",
+          error.response?.data || error.message,
+        );
+        throw new Error("Could not unassign vehicle");
+      }
+    },
   },
 };
 

@@ -45,5 +45,8 @@ ENV APP_ENV=dev
 ENV APP_DEBUG=1
 ENV FRANKENPHP_CONFIG="worker ./public/index.php"
 
+# Bake migrations into the image
+RUN php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration || true
+
 EXPOSE 80
 CMD ["frankenphp", "php-server", "--root", "public/"]

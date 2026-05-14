@@ -17,6 +17,8 @@ use Symfony\Component\Messenger\MessageBusInterface;
 #[Route('/api/vehicles')]
 class VehicleController extends AbstractController
 {
+    use RoleCheckTrait;
+
     public function __construct(
         private EntityManagerInterface $em,
         private VehicleRepository $vehicleRepository,
@@ -37,6 +39,11 @@ class VehicleController extends AbstractController
     #[Route('', name: 'vehicles_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $roleCheck = $this->canCreate($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $body = json_decode($request->getContent(), true);
         if (!is_array($body)) return $this->json(['error' => 'Invalid JSON'], 400);
 
@@ -77,6 +84,11 @@ class VehicleController extends AbstractController
     #[Route('/{id}', name: 'vehicles_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
+        $roleCheck = $this->canUpdate($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $vehicle = $this->vehicleRepository->find($id);
         if (!$vehicle) return $this->json(['error' => 'Not found'], 404);
 
@@ -106,8 +118,13 @@ class VehicleController extends AbstractController
 
     // DELETE /api/vehicles/{id}
     #[Route('/{id}', name: 'vehicles_delete', methods: ['DELETE'])]
-    public function delete(string $id): JsonResponse
+    public function delete(string $id, Request $request): JsonResponse
     {
+        $roleCheck = $this->canDelete($request);
+        if ($roleCheck instanceof JsonResponse) {
+            return $roleCheck;
+        }
+
         $vehicle = $this->vehicleRepository->find($id);
 
         if (!$vehicle) {

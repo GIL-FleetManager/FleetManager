@@ -13,14 +13,28 @@ const maintenanceResolvers = {
       const res = await axios.get(`${MAINTENANCE_URL}/api/interventions/${id}`);
       return res.data;
     },
+    techniciens: () => {
+      return [
+        {
+          id: "PASTE-YOUNES-TECH-KEYCLOAK-UUID-HERE",
+          nom: "Younes (Technicien)",
+        },
+      ];
+    },
   },
   Mutation: {
     createIntervention: async (_, args) => {
       try {
-        const res = await axios.post(`${MAINTENANCE_URL}/api/interventions`, args);
-        return res.data; 
+        const res = await axios.post(
+          `${MAINTENANCE_URL}/api/interventions`,
+          args,
+        );
+        return res.data;
       } catch (error) {
-        console.error("Maintenance Backend Error:", error.response?.data || error.message);
+        console.error(
+          "Maintenance Backend Error:",
+          error.response?.data || error.message,
+        );
         throw new Error("Le backend de maintenance a refusé la requête.");
       }
     },

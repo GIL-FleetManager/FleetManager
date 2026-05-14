@@ -52,6 +52,8 @@ type Query {
 
   getLastLocation(vehicleId: ID!): GpsPoint
 
+  techniciens: [Technicien]
+
   health: String
 }
 
@@ -96,6 +98,14 @@ type Mutation {
 
   deleteConducteur(id: ID!): Boolean
 
+  assignVehicleToConductor(
+    conductor_id: ID!
+    vehicle_id: ID!
+    unassign_previous: Boolean
+  ): ConductorVehicleAssignment
+
+  unassignVehicleFromConductor(assignment_id: ID!): ConductorVehicleAssignment
+
   createIntervention(
     vehicule_id: String!
     technicien_id: String
@@ -118,4 +128,16 @@ type Mutation {
   ): Intervention
 
   deleteIntervention(id: ID!): Boolean
+}
+
+type ConductorVehicleAssignment {
+  id: ID!
+  conductor_id: ID!
+  vehicle_id: ID!
+  assigned_at: String!
+  unassigned_at: String
+  status: String!
+  created_at: String!
+}
+
 }

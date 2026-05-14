@@ -1,7 +1,8 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ConducteursService, Conducteur } from './services/conducteurs';
+import { ConducteursService, Conducteur, ConductorVehicleAssignment } from './services/conducteurs';
+import { ServiceVehicules, Vehicule } from '../vehicules/services/service-vehicules';
 
 type ModalMode = 'create' | 'edit' | null;
 
@@ -14,6 +15,7 @@ type ModalMode = 'create' | 'edit' | null;
 })
 export class Conducteurs implements OnInit {
   private readonly svc = inject(ConducteursService);
+  private readonly vehiculesSvc = inject(ServiceVehicules);
 
   conducteurs = signal<Conducteur[]>([]);
   isLoading = signal(true);
@@ -22,10 +24,15 @@ export class Conducteurs implements OnInit {
   modalMode = signal<ModalMode>(null);
   saving = signal(false);
   deleteId = signal<string | null>(null);
-
   toast = signal<{ msg: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
-  // Initialisation du formulaire
+  // Assignment modal state
+  assignModal = signal<Conducteur | null>(null);
+  vehicules = signal<Vehicule[]>([]);
+  currentAssignment = signal<ConductorVehicleAssignment | null>(null);
+  selectedVehicleId = signal<string>('');
+  assignSaving = signal(false);
+
   form: Omit<Conducteur, 'id'> = {
     nom: '',
     prenom: '',
@@ -36,10 +43,8 @@ export class Conducteurs implements OnInit {
     statut: 'actif',
   };
   editingId: string | null = null;
-
   statuts: string[] = ['actif', 'inactif', 'en_conge'];
 
-  // Barre de recherche réactive
   filtered = computed(() => {
     const q = this.search().toLowerCase();
     return this.conducteurs().filter(
@@ -53,6 +58,11 @@ export class Conducteurs implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    // Preload vehicules for the assignment dropdown
+    this.vehiculesSvc.getAll().subscribe({
+      next: (data) => this.vehicules.set(data),
+      error: () => {},
+    });
   }
 
   load(): void {
@@ -70,7 +80,75 @@ export class Conducteurs implements OnInit {
     });
   }
 
-  // --- LOGIQUE DES MODALES (Identique aux véhicules) ---
+  // --- ASSIGNMENT MODAL ---
+
+  openAssign(c: Conducteur): void {
+    this.assignModal.set(c);
+    this.selectedVehicleId.set('');
+    this.currentAssignment.set(null);
+    // Load current assignment for this conductor
+    this.svc.getCurrentAssignment(c.id!).subscribe({
+      next: (a) => this.currentAssignment.set(a),
+      error: () => this.currentAssignment.set(null),
+    });
+  }
+
+  closeAssignModal(): void {
+    this.assignModal.set(null);
+    this.currentAssignment.set(null);
+    this.selectedVehicleId.set('');
+  }
+
+  doAssign(): void {
+    const conducteur = this.assignModal();
+    const vehicleId = this.selectedVehicleId();
+    if (!conducteur || !vehicleId) return;
+
+    this.assignSaving.set(true);
+    this.svc.assignVehicle(conducteur.id!, vehicleId, true).subscribe({
+      next: (assignment) => {
+        this.currentAssignment.set(assignment);
+        this.selectedVehicleId.set('');
+        this.assignSaving.set(false);
+        this.showToast('Véhicule assigné avec succès ✅', 'success');
+      },
+      error: (err) => {
+        console.error('Assignment Error:', err);
+        const errorMsg =
+          err?.error?.errors?.[0]?.message ||
+          err?.error?.['hydra:description'] ||
+          err?.message ||
+          'Erreur inconnue';
+        this.showToast("Erreur lors de l'assignation: " + errorMsg, 'error');
+        this.assignSaving.set(false);
+      },
+    });
+  }
+
+  doUnassign(): void {
+    const assignment = this.currentAssignment();
+    if (!assignment) return;
+
+    this.assignSaving.set(true);
+    this.svc.unassignVehicle(assignment.id).subscribe({
+      next: () => {
+        this.currentAssignment.set(null);
+        this.assignSaving.set(false);
+        this.showToast('Véhicule désassigné ✅', 'success');
+      },
+      error: () => {
+        this.showToast('Erreur lors du désassignement', 'error');
+        this.assignSaving.set(false);
+      },
+    });
+  }
+
+  getVehiculeLabel(vehicleId: string): string {
+    const v = this.vehicules().find((v) => v.id === vehicleId);
+    return v ? `${v.immatriculation} — ${v.marque} ${v.modele}` : vehicleId;
+  }
+
+  // --- CRUD MODAL ---
 
   openCreate(): void {
     this.form = {
@@ -127,7 +205,6 @@ export class Conducteurs implements OnInit {
   confirmDelete(id: string): void {
     this.deleteId.set(id);
   }
-
   cancelDelete(): void {
     this.deleteId.set(null);
   }

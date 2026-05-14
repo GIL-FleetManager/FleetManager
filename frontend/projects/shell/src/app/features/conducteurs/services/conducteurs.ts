@@ -13,6 +13,16 @@ export interface Conducteur {
   statut: string;
 }
 
+export interface ConductorVehicleAssignment {
+  id: string;
+  conductor_id: string;
+  vehicle_id: string;
+  assigned_at: string;
+  unassigned_at?: string;
+  status: string;
+  created_at: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ConducteursService {
   private readonly apollo = inject(Apollo);
@@ -175,5 +185,98 @@ export class ConducteursService {
         variables: { id },
       })
       .pipe(map((res) => res.data?.deleteConducteur ?? false));
+  }
+
+  /**
+   * Assigne un véhicule à un conducteur
+   */
+  assignVehicle(
+    conductorId: string,
+    vehicleId: string,
+    unassignPrevious: boolean = true,
+  ): Observable<ConductorVehicleAssignment> {
+    return this.apollo
+      .mutate<{ assignVehicleToConductor: ConductorVehicleAssignment }>({
+        mutation: gql`
+          mutation AssignVehicleToConductor(
+            $conductor_id: ID!
+            $vehicle_id: ID!
+            $unassign_previous: Boolean
+          ) {
+            assignVehicleToConductor(
+              conductor_id: $conductor_id
+              vehicle_id: $vehicle_id
+              unassign_previous: $unassign_previous
+            ) {
+              id
+              conductor_id
+              vehicle_id
+              assigned_at
+              status
+            }
+          }
+        `,
+        variables: {
+          conductor_id: conductorId,
+          vehicle_id: vehicleId,
+          unassign_previous: unassignPrevious,
+        },
+      })
+      .pipe(
+        map((res) => {
+          if (!res.data?.assignVehicleToConductor) {
+            throw new Error("Échec de l'assignation du véhicule");
+          }
+          return res.data.assignVehicleToConductor;
+        }),
+      );
+  }
+
+  /**
+   * Retire un véhicule d'un conducteur
+   */
+  unassignVehicle(assignmentId: string): Observable<ConductorVehicleAssignment> {
+    return this.apollo
+      .mutate<{ unassignVehicleFromConductor: ConductorVehicleAssignment }>({
+        mutation: gql`
+          mutation UnassignVehicleFromConductor($assignment_id: ID!) {
+            unassignVehicleFromConductor(assignment_id: $assignment_id) {
+              id
+              conductor_id
+              vehicle_id
+              unassigned_at
+              status
+            }
+          }
+        `,
+        variables: { assignment_id: assignmentId },
+      })
+      .pipe(
+        map((res) => {
+          if (!res.data?.unassignVehicleFromConductor) {
+            throw new Error('Échec du retrait du véhicule');
+          }
+          return res.data.unassignVehicleFromConductor;
+        }),
+      );
+  }
+
+  getCurrentAssignment(conductorId: string): Observable<ConductorVehicleAssignment | null> {
+    return this.apollo
+      .query<{ getCurrentAssignment: ConductorVehicleAssignment }>({
+        query: gql`
+          query GetCurrentAssignment($conductor_id: ID!) {
+            getCurrentAssignment(conductor_id: $conductor_id) {
+              id
+              conductor_id
+              vehicle_id
+              assigned_at
+              status
+            }
+          }
+        `,
+        variables: { conductor_id: conductorId },
+      })
+      .pipe(map((res) => res.data?.getCurrentAssignment ?? null));
   }
 }

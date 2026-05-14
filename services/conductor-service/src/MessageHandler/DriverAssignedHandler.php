@@ -2,37 +2,36 @@
 
 namespace App\MessageHandler;
 
-use App\Message\VehicleStatusChanged;
+use App\Message\DriverAssigned;
 use App\Service\KafkaService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Psr\Log\LoggerInterface;
 
 #[AsMessageHandler]
-class VehicleStatusHandler
+class DriverAssignedHandler
 {
     public function __construct(
         private KafkaService $kafkaService,
         private LoggerInterface $logger,
     ) {}
 
-    public function __invoke(VehicleStatusChanged $event): void
+    public function __invoke(DriverAssigned $event): void
     {
         $payload = [
-            'event' => 'VEHICLE_STATUS_CHANGED',
+            'event' => 'DRIVER_ASSIGNED',
             'timestamp' => $event->timestamp,
             'payload' => [
                 'vehicle_id' => $event->vehicleId,
-                'old_status' => $event->oldStatus,
-                'new_status' => $event->newStatus,
+                'driver_id' => $event->driverId,
+                'assigned_by' => $event->assignedBy,
             ],
         ];
 
-        $this->kafkaService->publishEvent('vehicle.updated', $payload);
+        $this->kafkaService->publishEvent('driver.assigned', $payload);
 
-        $this->logger->info('Vehicle status change published to Kafka', [
+        $this->logger->info('Driver assignment published to Kafka', [
             'vehicle_id' => $event->vehicleId,
-            'old_status' => $event->oldStatus,
-            'new_status' => $event->newStatus,
+            'driver_id' => $event->driverId,
         ]);
     }
 }

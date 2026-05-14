@@ -18,7 +18,7 @@
     <span class="search-icon">🔍</span>
     <input
       type="text"
-      placeholder="Rechercher par ID Véhicule ou Type d'intervention..."
+      placeholder="Rechercher par véhicule, immatriculation ou type d'intervention..."
       [ngModel]="search()"
       (ngModelChange)="search.set($event)"
     />
@@ -38,8 +38,9 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Véhicule (ID)</th>
+            <th>Véhicule</th>
             <th>Type d'intervention</th>
+            <th>Technicien</th>
             <th>Date Planifiée</th>
             <th>Statut</th>
             <th>Actions</th>
@@ -49,9 +50,10 @@
           @for (i of filtered(); track i.id) {
             <tr>
               <td>
-                <strong class="immat">{{ i.vehicule_id }}</strong>
+                <strong class="immat">{{ getVehiculeLabel(i.vehicule_id) }}</strong>
               </td>
               <td>{{ i.type_intervention }}</td>
+              <td>{{ getTechnicienLabel(i.technicien_id) }}</td>
               <td>{{ i.date_planifiee | date: 'dd/MM/yyyy' }}</td>
               <td>
                 <span class="badge" [class]="statutClass(i.statut)">
@@ -79,7 +81,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="empty-row">Aucune intervention trouvée</td>
+              <td colspan="6" class="empty-row">Aucune intervention trouvée</td>
             </tr>
           }
         </tbody>
@@ -101,15 +103,24 @@
         </div>
         <div class="modal-body">
           <div class="form-row">
+            <!-- Véhicule dropdown -->
             <div class="form-group">
-              <label>ID Véhicule *</label>
-              <input type="text" [(ngModel)]="form.vehicule_id" placeholder="Ex: v123" />
+              <label>Véhicule *</label>
+              <select [(ngModel)]="form.vehicule_id">
+                <option value="">— Sélectionner un véhicule —</option>
+                @for (v of vehicules(); track v.id) {
+                  <option [value]="v.id">
+                    {{ v.immatriculation }} — {{ v.marque }} {{ v.modele }}
+                  </option>
+                }
+              </select>
             </div>
             <div class="form-group">
               <label>Date Planifiée *</label>
               <input type="date" [(ngModel)]="form.date_planifiee" />
             </div>
           </div>
+
           <div class="form-group">
             <label>Type d'intervention *</label>
             <input
@@ -118,13 +129,29 @@
               placeholder="Ex: Changement de pare-brise"
             />
           </div>
-          <div class="form-group">
-            <label>Statut</label>
-            <select [(ngModel)]="form.statut">
-              @for (s of statuts; track s) {
-                <option [value]="s">{{ statutLabel(s) }}</option>
-              }
-            </select>
+
+          <div class="form-row">
+            <!-- Technicien dropdown -->
+            <div class="form-group">
+              <label>Technicien assigné</label>
+              <select [(ngModel)]="form.technicien_id">
+                <option [ngValue]="null">— Aucun technicien —</option>
+                @for (t of techniciens(); track t.id) {
+                  <option [value]="t.id">
+                    {{ t.prenom }} {{ t.nom }}{{ t.specialite ? ' · ' + t.specialite : '' }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Statut</label>
+              <select [(ngModel)]="form.statut">
+                @for (s of statuts; track s) {
+                  <option [value]="s">{{ statutLabel(s) }}</option>
+                }
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-footer">

@@ -1,7 +1,7 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: vehicle-events
+  name: driver.assigned
   namespace: fleet-manager
   labels:
     strimzi.io/cluster: fleet-kafka
@@ -15,23 +15,96 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: test-fleet
+  name: vehicle.updated
   namespace: fleet-manager
   labels:
     strimzi.io/cluster: fleet-kafka
 spec:
   partitions: 1
   replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: vehicle-positions
+  name: maintenance.alert
+  namespace: fleet-manager
+  labels:
+    strimzi.io/cluster: fleet-kafka
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: geofence.alert
+  namespace: fleet-manager
+  labels:
+    strimzi.io/cluster: fleet-kafka
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: fleet.vehicle.status
+  namespace: fleet-manager
+  labels:
+    strimzi.io/cluster: fleet-kafka
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: fleet.location.raw
   namespace: fleet-manager
   labels:
     strimzi.io/cluster: fleet-kafka
 spec:
   partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: fleet.maintenance.alerts
+  namespace: fleet-manager
+  labels:
+    strimzi.io/cluster: fleet-kafka
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: fleet.system.logs
+  namespace: fleet-manager
+  labels:
+    strimzi.io/cluster: fleet-kafka
+spec:
+  partitions: 1
   replicas: 1
   config:
     retention.ms: 7200000
