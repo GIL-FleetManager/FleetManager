@@ -1,231 +1,81 @@
 # Fleet Manager
 
-Complete setup guide for deploying the Fleet Manager application with microservices, Kafka events, and Kubernetes orchestration.
+Microservices platform for fleet management — vehicles, drivers, maintenance, and GPS tracking.
+
 
 ## Prerequisites
 
-### Local Development (Docker Compose)
+- Docker + Minikube
+- kubectl
+- Helm v3
+- Node.js 18+
 
-- **Docker** & **Docker Compose** (v2.0+)
-- **Make** (for convenient commands)
-- `.env` file configured with database credentials
 
-### Kubernetes Deployment
+## Deployment
 
-- **Minikube** or **Kubernetes** cluster (v1.20+)
-- **kubectl** configured to access your cluster
-- **Helm** (v3.0+)
-- **Strimzi Kafka Operator** (for Kafka on K8s)
-
-## Quick Start - Local Development
-
-### 1. Environment Setup
-
-Create a `.env` file in the project root:
+### 1. Start Minikube
 
 ```bash
-cp .env.example .env 
-# or create manually:
-cat > .env << 'EOF'
-DB_USER=postgres
-DB_PASSWORD=fleetmanager
-DB_NAME=fleetmanager
-APP_SECRET=your-secret-key-here
-DEFAULT_URI=http://localhost
-EOF
+minikube start --driver=docker
+eval $(minikube docker-env)
 ```
 
-
-### Kubernetes Deployment
-
-#### 1. Create Namespace
+### 2. Create namespaces
 
 ```bash
 kubectl create namespace fleet-manager
+kubectl create namespace database
+kubectl create namespace observabilite
 ```
 
-#### 2. Install PostgreSQL (with Helm)
+### 3. Build service images
 
 ```bash
-# Add Bitnami Helm repository
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
+docker build -t fleetmanager-api-gateway:latest services/api-gateway/
+docker build -t fleetmanager-vehicle-service:latest services/vehicle-service/
+docker build -t fleetmanager-conductor-service:latest services/conductor-service/
+docker build -t fleetmanager-maintenance-service:latest services/maintenance-service/
+docker build -t fleetmanager-localization-service:latest services/localization-service/
+docker build -t fleetmanager-event-service:latest services/event-service/
+```
 
-# Install PostgreSQL for shared databases
+### 4. Deploy databases
+
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo add timescale https://charts.timescale.com
+
 helm install fleet-db bitnami/postgresql -n database \
   --set auth.postgresPassword=${DB_PASSWORD} \
-  --set primary.initdb.scriptsConfigMap=postgres-init-script \
   --set primary.persistence.enabled=false
 
-# Install TimescaleDB for localization service
-helm install fleet-localization-db bitnami/timescaledb -n database \
-  --set auth.password=${DB_PASSWORD} \
-  --set persistence.enabled=false
+helm install fleet-localization-db timescale/timescaledb-single -n database \
+  --set secrets.credentials.PATRONI_SUPERUSER_PASSWORD=${DB_PASSWORD} \
+  --set secrets.credentials.PATRONI_REPLICATION_PASSWORD=${DB_PASSWORD} \
+  --set secrets.credentials.PATRONI_PASSWORD=${DB_PASSWORD} \
+  --set persistentVolumes.data.enabled=false \
+  --set persistentVolumes.wal.enabled=false
 ```
 
-#### 3. Verify Databases
+### 5. Deploy Keycloak
 
 ```bash
-# Connect to PostgreSQL pod
-kubectl exec -it svc/fleet-db-postgresql -n database -- psql -U postgres
-
-# List databases
-\l
-
-# Exit
-\q
-```
-
-## Kafka Configuration
-
-### Topics Configuration
-
-Kafka topics are defined in [kubernetes/infrastructure/kafka/topics.yaml](kubernetes/infrastructure/kafka/topics.yaml).
-
-**Topics:**
-
-- `driver.assigned` - When a driver is assigned to a vehicle
-- `vehicle.updated` - When vehicle status changes
-- `maintenance.alert` - Maintenance/intervention alerts
-- `geofence.alert` - Geofence violations
-- `fleet.vehicle.status` - Fleet vehicle status updates
-- `fleet.location.raw` - Raw GPS location data
-- `fleet.maintenance.alerts` - Maintenance alerts
-- `fleet.system.logs` - System logs from all services
-
-### Local Development
-
-Kafka is automatically started in Docker Compose. Topics are auto-created if `KAFKA_AUTO_CREATE_TOPICS_ENABLE=true`.
-
-Verify with:
-
-```bash
-docker-compose exec kafka /opt/kafka/bin/kafka-topics.sh \
-  --bootstrap-server localhost:9092 \
-  --list
-```
-
-### Kubernetes Deployment
-
-```bash
-# Apply Kafka topics
-kubectl apply -f kubernetes/infrastructure/kafka/topics.yaml -n fleet-manager
-
-# Verify topics
-kubectl get kafkatopic -n fleet-manager
-```
-
-## Microservices Kafka Events
-
-Each microservice publishes events when data changes. The Event Service consumes all events and stores them in the `logs_events` table.
-
-### Event Flow
-
-```
-Service Event (Create/Update)
-    ↓
-Symfony Messenger Message
-    ↓
-Message Handler
-    ↓
-KafkaService.publishEvent()
-    ↓
-Kafka Topic
-    ↓
-Event Service Consumer
-    ↓
-PostgreSQL logs_events table
-```
-
-### Example: Vehicle Status Changed
-
-**Producer:** Vehicle Service
-**Topic:** `vehicle.updated`
-**Message Format:**
-
-```json
-{
-  "event": "VEHICLE_STATUS_CHANGED",
-  "timestamp": "2026-05-14T10:00:00Z",
-  "payload": {
-    "vehicle_id": "uuid-v123",
-    "old_status": "disponible",
-    "new_status": "en_mission"
-  }
-}
-```
-
-### Query Events
-
-Use Event Service API:
-
-```bash
-# Get all events
-curl http://localhost:8085/events
-
-# Get events by type
-curl "http://localhost:8085/events?event_type=VEHICLE_STATUS_CHANGED"
-
-# Get events by topic
-curl "http://localhost:8085/events?topic=vehicle.updated"
-
-# Get event statistics
-curl http://localhost:8085/events/stats
-```
-
-## Kubernetes Deployment
-
-### 1. Prerequisites
-
-```bash
-# Start Minikube
-minikube start --driver=docker \
-  --extra-config=kubeadm.ignore-preflight-errors=Swap \
-  --extra-config=kubelet.enforce-node-allocatable=""
-
-# Enable ingress addon (optional)
-minikube addons enable ingress
-```
-
-### 2. Create Namespace and Secrets
-
-```bash
-# Create namespace
-kubectl create namespace fleet-manager
-
-# Create global config
-kubectl create configmap global-fleet-config \
-  --from-env-file=.env \
-  -n fleet-manager
-```
-
-### 3. Deploy Infrastructure (Kafka, Databases)
-
-```bash
-# Create database namespace
-kubectl create namespace database
-
-# Install databases (see Database Setup above)
-
-# Deploy Kafka infrastructure
-kubectl apply -f kubernetes/infrastructure/kafka/ -n fleet-manager
-```
-
-### 4. Deploy Microservices
-
-```bash
-# Apply service manifests
 kubectl apply -f kubernetes/services/ -n fleet-manager
-
-# Verify deployments
-kubectl get pods -n fleet-manager
-kubectl get svc -n fleet-manager
+kubectl create configmap keycloak-realm-import \
+  -n fleet-manager \
+  --from-file=realm.json=docs/keycloak-config.json
 ```
 
-### 5. Run Migrations
+### 6. Deploy services
 
 ```bash
-# For services that need database setup:
+kubectl create configmap global-fleet-config --from-env-file=.env -n fleet-manager
+kubectl apply -f kubernetes/services/ -n fleet-manager
+```
+
+### 7. Run migrations
+
+```bash
 kubectl exec -it deploy/vehicle-service -n fleet-manager -- \
   php bin/console doctrine:migrations:migrate --no-interaction
 
@@ -236,154 +86,110 @@ kubectl exec -it deploy/maintenance-service -n fleet-manager -- \
   php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
-### 6. Verify Services
+---
+
+## Observability
 
 ```bash
-# Check all pods
-kubectl get pods -n fleet-manager
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 
-# Check logs
-kubectl logs -l app=vehicle-service -n fleet-manager -f
+helm install kube-prom prometheus-community/kube-prometheus-stack -n observabilite
 
-# Port-forward to test services
-kubectl port-forward svc/api-gateway 8088:80 -n fleet-manager
+helm install loki grafana/loki -n observabilite \
+  --set deploymentMode=SingleBinary \
+  --set loki.auth_enabled=false \
+  --set singleBinary.replicas=1 \
+  --set minio.enabled=false \
+  --set loki.storage.type=filesystem \
+  --set read.replicas=0 --set write.replicas=0 --set backend.replicas=0 \
+  --set loki.useTestSchema=true \
+  --set loki.commonConfig.replication_factor=1
+
+helm install promtail grafana/promtail -n observabilite \
+  --set config.clients[0].url=http://loki-gateway.observabilite.svc.cluster.local/loki/api/v1/push
+
+helm install jaeger jaegertracing/jaeger -n observabilite
+
+helm install otel-collector open-telemetry/opentelemetry-collector -n observabilite \
+  --set image.repository="otel/opentelemetry-collector-contrib" \
+  --set mode="deployment"
 ```
 
-## Authentication (Keycloak)
+---
 
-### Get Access Token
+## Access
+
+Start port-forwards:
+
+```bash
+./start-app.sh      # API Gateway + Keycloak
+./start-obs.sh      # Grafana + Prometheus + Jaeger + Loki
+```
+
+| Service                 | URL                    |
+| ----------------------- | ---------------------- |
+| Apollo GraphQL Explorer | http://localhost:8081  |
+| Keycloak Admin          | http://localhost:8080  |
+| Grafana                 | http://localhost:3000  |
+| Prometheus              | http://localhost:9090  |
+| Jaeger                  | http://localhost:16686 |
+| Loki Gateway            | http://localhost:3100  |
+
+Grafana default credentials: `admin` / retrieved via:
+
+```bash
+kubectl get secret kube-prom-grafana -n observabilite \
+  -o jsonpath="{.data.admin-password}" | base64 -d
+```
+
+---
+
+## Kafka Topics
+
+| Topic                | Producer             | Description                 |
+| -------------------- | -------------------- | --------------------------- |
+| `driver.assigned`    | Conductor Service    | Driver assigned to vehicle  |
+| `vehicle.updated`    | Vehicle Service      | Vehicle status changed      |
+| `maintenance.alert`  | Maintenance Service  | Maintenance alert triggered |
+| `fleet.location.raw` | Localization Service | Raw GPS data                |
+| `fleet.system.logs`  | All services         | System logs                 |
+
+---
+
+## Environment Variables
+
+```bash
+DB_USER=postgres
+DB_PASSWORD=sidou_password
+DB_NAME=fleetmanager
+APP_SECRET=your-secret-key
+APP_ENV=prod
+KAFKA_BROKERS=fleet-kafka-kafka-bootstrap.fleet-manager.svc.cluster.local:9092
+VEHICLE_SERVICE_URL=http://vehicle-service:80
+CONDUCTOR_SERVICE_URL=http://conductor-service:80
+MAINTENANCE_SERVICE_URL=http://maintenance-service:80
+LOCALIZATION_SERVICE_URL=http://localization-service:8000
+KEYCLOAK_URL=http://fleet-keycloak:8080
+```
+
+---
+
+## Authentication
+
+Obtain a token:
 
 ```bash
 curl -X POST 'http://localhost:8080/realms/fleet-manager/protocol/openid-connect/token' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=password' \
-  -d 'client_id=api-gateway' \
-  -d 'client_secret=dzT2qEBxZKstFp0iZo4x0rNnhEMmjMUu' \
-  -d 'username=USER' \
-  -d 'password=PASS' \
-  -d 'scope=openid'
+  -d 'grant_type=password&client_id=fleet-frontend&username=USER&password=PASS&scope=openid'
 ```
 
-### Use Token in API Calls
-
-In GraphQL Apollo Client, add header:
+Pass the token in GraphQL requests:
 
 ```
 Authorization: Bearer <access_token>
 ```
 
-## Troubleshooting
-
-### Migrations Not Running
-
-```bash
-# Re-run migrations in Docker container
-docker-compose exec vehicle-service php bin/console doctrine:migrations:migrate --no-interaction --force
-
-# Or in Kubernetes
-kubectl exec -it deploy/vehicle-service -n fleet-manager -- \
-  php bin/console doctrine:migrations:migrate --no-interaction --force
-```
-
-### Kafka Connection Issues
-
-```bash
-# Test Kafka connectivity
-docker-compose exec vehicle-service curl -v kafka:9092
-
-# Check Kafka broker
-docker-compose logs kafka | grep -i "started"
-```
-
-### Database Connection Issues
-
-Ensure `serverVersion=16` is in DATABASE_URL:
-
-```
-DATABASE_URL=postgresql://user:pass@host:5432/db?serverVersion=16
-```
-
-### Event Service Not Consuming
-
-```bash
-# Check Event Service logs
-docker-compose logs event-service
-
-# Verify database connection
-docker-compose exec event-service python -c "import asyncpg; print('OK')"
-```
-
-## Architecture Overview
-
-### Microservices
-
-- **Vehicle Service** (PHP/Symfony) - Manage vehicles
-- **Conductor Service** (PHP/Symfony) - Manage drivers/conductors
-- **Maintenance Service** (PHP/Symfony) - Track maintenance tasks
-- **Localization Service** (Go) - GPS tracking and location services
-- **Event Service** (Python/FastAPI) - Centralized event logging
-
-### Infrastructure
-
-- **Kafka** - Event streaming
-- **PostgreSQL** - Relational data storage
-- **TimescaleDB** - Time-series location data
-- **Keycloak** - Authentication/Authorization
-- **API Gateway** - GraphQL unified interface
-- **Frontend** - Angular web application
-
-### Data Flow
-
-```
-User Actions → Frontend → API Gateway → Microservices
-                                              ↓
-                                        Kafka Events
-                                              ↓
-                                       Event Service
-                                              ↓
-                                         PostgreSQL
-```
-
-## Next Steps
-
-1. **Deploy to Kubernetes** - Follow the K8S deployment steps above
-2. **Configure Observability** - Set up Jaeger, Prometheus, Grafana
-3. **Add Tests** - Implement unit and integration tests
-4. **Set Up CI/CD** - GitHub Actions, GitLab CI, or Jenkins pipeline
-
-## Support & Documentation
-
-- [Database Setup](kubernetes/infrastructure/database/Database.md)
-- [Kafka Configuration](kubernetes/infrastructure/kafka/Kafka.md)
-- [Kubernetes Deployment](kubernetes/K8S.md)
-- [Observability Setup](kubernetes/infrastructure/observabilite/Observabilite.md)
-
-## Environment Variables Reference
-
-```bash
-# Database
-DB_USER=postgres
-DB_PASSWORD=fleetmanager
-DB_NAME=fleetmanager
-
-# Kafka
-KAFKA_BROKERS=kafka:9092
-ENQUEUE_DSN=kafka://kafka:9092
-
-# Application
-APP_ENV=dev
-APP_SECRET=your-secret-key
-DEFAULT_URI=http://localhost
-CORS_ALLOW_ORIGIN=*
-
-# Services URLs (for API Gateway)
-VEHICLE_SERVICE_URL=http://vehicle-service:80
-CONDUCTOR_SERVICE_URL=http://conductor-service:80
-MAINTENANCE_SERVICE_URL=http://maintenance-service:80
-LOCALIZATION_SERVICE_URL=http://localization-service:8000
-```
-
----
-
-**Last Updated:** May 14, 2026
-**Version:** 1.0.0
