@@ -69,7 +69,11 @@ const server = new ApolloServer({
           return reject(
             new AuthenticationError(`Invalid Token: ${err.message}`),
           );
-        resolve({ user: decoded });
+
+        resolve({
+          user: decoded,
+          rawToken: authHeader,
+        });
       });
     });
   },

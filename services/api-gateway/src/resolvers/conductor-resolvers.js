@@ -13,22 +13,16 @@ const conducteurResolvers = {
         console.log("🔍 [ENV] CONDUCTOR_API:", CONDUCTOR_API);
 
         const res = await axios.get(CONDUCTOR_API);
-        console.log("✅ [GET] Status:", res.status);
-        console.log(
-          "✅ [GET] Raw response:",
-          JSON.stringify(res.data, null, 2),
-        );
+        console.log("[GET] Status:", res.status);
+        console.log("[GET] Raw response:", JSON.stringify(res.data, null, 2));
 
         const data = res.data["hydra:member"] || res.data.member || res.data;
 
-        console.log(
-          "✅ [GET] First item raw:",
-          JSON.stringify(data[0], null, 2),
-        );
+        console.log("[GET] First item raw:", JSON.stringify(data[0], null, 2));
 
         return data.map((d) => {
-          console.log("🗂️ [MAP] item keys:", Object.keys(d));
-          console.log("🗂️ [MAP] item:", JSON.stringify(d, null, 2));
+          console.log("[MAP] item keys:", Object.keys(d));
+          console.log("[MAP] item:", JSON.stringify(d, null, 2));
           return {
             id: d.id,
             nom: d.nom,
@@ -62,7 +56,7 @@ const conducteurResolvers = {
   },
   Mutation: {
     createConducteur: async (_, args) => {
-      console.log("🚀 [CREATE] Variables envoyées à Symfony :", args);
+      console.log("[CREATE] Variables envoyées à Symfony :", args);
       try {
         const res = await axios({
           method: "post",
@@ -74,7 +68,7 @@ const conducteurResolvers = {
           data: args,
         });
 
-        console.log("✅ [CREATE] Réponse brute de Symfony :", res.data);
+        console.log("[CREATE] Réponse brute de Symfony :", res.data);
 
         const id = res.data.id;
         const full = await axios({
@@ -96,7 +90,7 @@ const conducteurResolvers = {
         };
       } catch (error) {
         console.error(
-          "❌ [CREATE] Erreur Symfony :",
+          "[CREATE] Erreur Symfony :",
           error.response?.data || error.message,
         );
         throw new Error(
@@ -154,14 +148,23 @@ const conducteurResolvers = {
     assignVehicleToConductor: async (
       _,
       { conductor_id, vehicle_id, unassign_previous },
+      context,
     ) => {
       try {
+        const token =
+          context.req?.headers?.authorization || context.token || "";
+
         const res = await axios({
           method: "post",
           url: `${CONDUCTOR_API}/${conductor_id}/assign-vehicle`,
           data: {
             vehicle_id,
             unassign_previous: unassign_previous ?? true,
+          },
+          headers: {
+            Authorization: context.rawToken,
+            "Content-Type": "application/json",
+            Accept: "application/ld+json",
           },
         });
         const d = res.data;
@@ -185,11 +188,16 @@ const conducteurResolvers = {
         );
       }
     },
-    unassignVehicleFromConductor: async (_, { assignment_id }) => {
+    unassignVehicleFromConductor: async (_, { assignment_id }, context) => {
       try {
         const res = await axios({
           method: "post",
           url: `${CONDUCTOR_API}/assignments/${assignment_id}/unassign`,
+          headers: {
+            Authorization: context.rawToken,
+            "Content-Type": "application/json",
+            Accept: "application/ld+json",
+          },
         });
         const d = res.data;
         return {

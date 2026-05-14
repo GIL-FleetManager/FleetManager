@@ -9,40 +9,46 @@ use Symfony\Component\HttpFoundation\Response;
 trait RoleCheckTrait
 {
     /**
-     * Extract user role from request (from Authorization header or custom header)
-     * In a real app, this would use Symfony Security
+     * Extract user roles from Keycloak JWT
      */
-    protected function getUserRole(Request $request): ?string
+    protected function getUserRoles(Request $request): array
     {
-        // Check custom header first
+        $auth = $request->headers->get('Authorization');
+        
+        // 1. Decode Keycloak JWT
+        if ($auth && str_starts_with($auth, 'Bearer ')) {
+            $token = substr($auth, 7); // Remove 'Bearer '
+            $parts = explode('.', $token);
+            
+            if (count($parts) === 3) {
+                // The middle part of the JWT contains the payload
+                $payload = json_decode(base64_decode($parts[1]), true);
+                
+                // Keycloak buries roles inside realm_access.roles
+                return $payload['realm_access']['roles'] ?? [];
+            }
+        }
+
+        // 2. Fallback for custom dev headers
         $role = $request->headers->get('X-User-Role');
         if ($role) {
-            return strtolower($role);
+            return [strtolower($role)];
         }
 
-        // Try to extract from Authorization header if using JWT
-        $auth = $request->headers->get('Authorization');
-        if ($auth && str_starts_with($auth, 'Bearer ')) {
-            // In production, decode JWT and extract role
-            // For now, return a default role
-            return 'user';
-        }
-
-        return null;
+        return [];
     }
 
     /**
-     * Check if user has required role
+     * Check if user has at least one of the required roles
      */
     protected function hasRole(Request $request, array $allowedRoles): bool
     {
-        $userRole = $this->getUserRole($request);
-        return $userRole && in_array($userRole, $allowedRoles);
+        $userRoles = $this->getUserRoles($request);
+        
+        // array_intersect checks if any elements match between the two arrays
+        return count(array_intersect($userRoles, $allowedRoles)) > 0;
     }
 
-    /**
-     * Check if user can create (admin/manager)
-     */
     protected function canCreate(Request $request): JsonResponse|bool
     {
         if (!$this->hasRole($request, ['admin', 'manager'])) {
@@ -54,9 +60,6 @@ trait RoleCheckTrait
         return true;
     }
 
-    /**
-     * Check if user can update (admin/manager)
-     */
     protected function canUpdate(Request $request): JsonResponse|bool
     {
         if (!$this->hasRole($request, ['admin', 'manager'])) {
@@ -68,9 +71,6 @@ trait RoleCheckTrait
         return true;
     }
 
-    /**
-     * Check if user can delete (admin only)
-     */
     protected function canDelete(Request $request): JsonResponse|bool
     {
         if (!$this->hasRole($request, ['admin'])) {
@@ -82,12 +82,9 @@ trait RoleCheckTrait
         return true;
     }
 
-    /**
-     * Check if user can view (anyone authenticated)
-     */
     protected function canView(Request $request): JsonResponse|bool
     {
-        if (!$this->getUserRole($request)) {
+        if (empty($this->getUserRoles($request))) {
             return $this->json(
                 ['error' => 'Unauthorized: Authentication required'],
                 Response::HTTP_UNAUTHORIZED

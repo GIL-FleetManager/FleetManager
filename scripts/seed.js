@@ -1,16 +1,4 @@
-/**
- * Seed script - populates vehicles, conductors, interventions via GraphQL
- * Usage: node seed.js
- * Requires: npm install node-fetch (or use built-in fetch in Node 18+)
- *
- * Get a token first:
- * export TOKEN=$(curl -s -X POST http://localhost:30080/realms/fleet-manager/protocol/openid-connect/token \
- *   -d "client_id=fleet-frontend&grant_type=password&username=younes-admin&password=YOUR_PASSWORD" \
- *   | jq -r .access_token)
- * node seed.js
- */
-
-const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:30081/graphql";
+const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:8081/graphql";
 const TOKEN = process.env.TOKEN || "";
 
 async function gql(query, variables = {}) {
@@ -144,7 +132,7 @@ const CONDUCTORS = [
 ];
 
 async function seedVehicles() {
-  console.log("\n🚗 Seeding vehicles...");
+  console.log("\nSeeding vehicles...");
   const ids = [];
   for (const v of VEHICLES) {
     const data = await gql(
@@ -159,7 +147,7 @@ async function seedVehicles() {
     );
     if (data?.createVehicule) {
       console.log(
-        `  ✅ ${v.marque} ${v.modele} (${v.immatriculation}) → id: ${data.createVehicule.id}`,
+        `  ${v.marque} ${v.modele} (${v.immatriculation}) → id: ${data.createVehicule.id}`,
       );
       ids.push(data.createVehicule.id);
     }
@@ -168,7 +156,7 @@ async function seedVehicles() {
 }
 
 async function seedConductors() {
-  console.log("\n👤 Seeding conductors...");
+  console.log("\nSeeding conductors...");
   const ids = [];
   for (const c of CONDUCTORS) {
     const data = await gql(
@@ -182,9 +170,7 @@ async function seedConductors() {
       c,
     );
     if (data?.createConducteur) {
-      console.log(
-        `  ✅ ${c.prenom} ${c.nom} → id: ${data.createConducteur.id}`,
-      );
+      console.log(` ${c.prenom} ${c.nom} → id: ${data.createConducteur.id}`);
       ids.push(data.createConducteur.id);
     }
   }
@@ -242,20 +228,20 @@ async function seedInterventions(vehicleIds) {
     );
     if (data?.createIntervention) {
       console.log(
-        `  ✅ ${int.type_intervention} → id: ${data.createIntervention.id}`,
+        `  ${int.type_intervention} → id: ${data.createIntervention.id}`,
       );
     }
   }
 }
 
 async function main() {
-  console.log("🌱 FleetManager Seed Script");
-  console.log(`📡 Gateway: ${GATEWAY_URL}`);
+  console.log("FleetManager Seed Script");
+  console.log(`Gateway: ${GATEWAY_URL}`);
 
   if (!TOKEN) {
-    console.error("\n❌ TOKEN is required. Get one with:");
+    console.error("\nTOKEN is required. Get one with:");
     console.error(
-      `  export TOKEN=$(curl -s -X POST http://localhost:30080/realms/fleet-manager/protocol/openid-connect/token \\`,
+      `  export TOKEN=$(curl -s -X POST http://localhost:8080/realms/fleet-manager/protocol/openid-connect/token \\`,
     );
     console.error(
       `    -d "client_id=fleet-frontend&grant_type=password&username=younes-admin&password=YOUR_PASSWORD" \\`,
@@ -268,10 +254,8 @@ async function main() {
   await seedConductors();
   await seedInterventions(vehicleIds);
 
-  console.log("\n✅ Seeding complete!");
-  console.log(
-    "\n📋 Copy these vehicle IDs into gps-simulator.js VEHICLES array:",
-  );
+  console.log("\nSeeding complete!");
+  console.log("\nCopy these vehicle IDs into gps-simulator.js VEHICLES array:");
   vehicleIds
     .slice(0, 3)
     .forEach((id, i) => console.log(`  Vehicle ${i + 1}: ${id}`));

@@ -140,4 +140,7 @@ type ConductorVehicleAssignment {
   created_at: String!
 }
 
+type Technicien {
+  id: ID!
+  nom: String!
 }
