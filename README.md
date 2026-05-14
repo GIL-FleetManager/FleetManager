@@ -35,60 +35,6 @@ DEFAULT_URI=http://localhost
 EOF
 ```
 
-### 2. Start Services with Docker Compose
-
-```bash
-# Build and start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-### Services Running Locally
-
-| Service              | URL                   | Port |
-| -------------------- | --------------------- | ---- |
-| Vehicle Service      | http://localhost:8081 | 8081 |
-| Conductor Service    | http://localhost:8082 | 8082 |
-| Maintenance Service  | http://localhost:8083 | 8083 |
-| Localization Service | http://localhost:8084 | 8084 |
-| Event Service        | http://localhost:8085 | 8085 |
-| API Gateway          | http://localhost:8088 | 8088 |
-| Frontend             | http://localhost:4200 | 4200 |
-| Keycloak             | http://localhost:8080 | 8080 |
-| Kafka                | kafka:9092            | 9092 |
-
-### 3. Verify Services Health
-
-```bash
-# Check all containers
-docker-compose ps
-
-# Test API Gateway
-curl http://localhost:8088/graphql
-
-# Test Event Service
-curl http://localhost:8085/health
-```
-
-## Database Setup
-
-### Local Development (Compose)
-
-Databases are automatically created in Docker Compose:
-
-- **vehicle-service**: `postgres_vehicle_data`
-- **conductor-service**: `postgres_conductor_data`
-- **maintenance-service**: `postgres_maintenance_data`
-- **localization-service**: `timescale_localization_data` (TimescaleDB)
-- **event-service**: `postgres_event_data`
-- **keycloak**: `postgres_keycloak_data`
-
-Migrations are automatically run on service startup thanks to baked-in migrations in Docker images.
 
 ### Kubernetes Deployment
 

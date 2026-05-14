@@ -1,10 +1,4 @@
-## 1. Initialisation
-
-```bash
-kubectl create namespace fleet-manager
-```
-
-## 2. Ajouter le repo Strimzi
+## 1. Ajouter le repo Strimzi
 
 ```bash
 helm repo add strimzi https://strimzi.io/charts/
@@ -26,8 +20,3 @@ helm install strimzi-operator strimzi/strimzi-kafka-operator -n fleet-manager `
 kubectl apply -f kubernetes/infrastructure/kafka/fleet-kafka.yaml
 kubectl apply -f kubernetes/infrastructure/kafka/topics.yaml
 ```
-
-- 📊 État Final Attendu (1/1 Running)
-- ✅ strimzi-cluster-operator-xxx
-- ✅ fleet-kafka-fleet-kafka-pool-0
-- ✅ fleet-kafka-entity-operator-xxx

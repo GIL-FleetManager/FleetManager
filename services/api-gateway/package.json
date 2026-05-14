@@ -12,6 +12,9 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.14.3",
     "@grpc/proto-loader": "^0.8.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.76.0",
+    "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
+    "@opentelemetry/sdk-node": "^0.218.0",
     "apollo-server": "^3.13.0",
     "axios": "^1.15.0",
     "express-session": "^1.19.0",

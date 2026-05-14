@@ -1,5 +1,3 @@
-@"
-
 # Stack Observabilité — FleetManager
 
 ## Prérequis
@@ -34,6 +32,8 @@ helm install jaeger jaegertracing/jaeger -n observabilite
 helm install otel-collector open-telemetry/opentelemetry-collector -n observabilite \
   --set image.repository="otel/opentelemetry-collector-contrib" \
   --set mode="deployment"
+helm install promtail grafana/promtail -n observabilite \
+  --set config.clients[0].url=http://loki.observabilite.svc.cluster.local:3100/loki/api/v1/push
 ```
 
 ### 4. Configurer les datasources Grafana

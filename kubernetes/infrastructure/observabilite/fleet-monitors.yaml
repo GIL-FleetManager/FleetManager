@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: fleet-manager-monitor
+  namespace: observabilite
+  labels:
+    release: kube-prom
+spec:
+  namespaceSelector:
+    matchNames:
+      - fleet-manager
+  selector:
+    matchLabels: {}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

@@ -7,7 +7,9 @@ minikube start
 or
 
 ```bash
-minikube start --driver=docker   --extra-config=kubeadm.ignore-preflight-errors=Swap   --extra-config=kubelet.enforce-node-allocatable=""
+minikube start --driver=docker \
+  --extra-config=kubeadm.ignore-preflight-errors=Swap \
+  --extra-config=kubelet.enforce-node-allocatable=""
 ```
 
 ## Apply manifests
