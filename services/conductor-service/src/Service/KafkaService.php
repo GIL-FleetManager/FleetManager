@@ -16,18 +16,14 @@ class KafkaService
         private SerializerInterface $serializer,
         private LoggerInterface $logger,
     ) {
-        $this->brokers = $_ENV['KAFKA_BROKERS'] ?? 'kafka:9092';
+        $this->brokers = $_ENV['ENQUEUE_DSN'] ?? 'rdkafka://kafka:9092';
     }
 
     private function getContext(): Context
     {
         if ($this->context === null) {
             try {
-                $factory = new RdKafkaConnectionFactory([
-                    'global' => [
-                        'bootstrap.servers' => $this->brokers,
-                    ],
-                ]);
+                $factory = new \Enqueue\RdKafka\RdKafkaConnectionFactory($this->brokers);
                 $this->context = $factory->createContext();
                 $this->logger->info('Kafka context initialized', ['brokers' => $this->brokers]);
             } catch (\Exception $e) {

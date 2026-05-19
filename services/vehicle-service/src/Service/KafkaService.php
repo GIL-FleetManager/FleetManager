@@ -4,7 +4,6 @@ namespace App\Service;
 
 use Enqueue\RdKafka\RdKafkaConnectionFactory;
 use Interop\Queue\Context;
-use Interop\Queue\Message;
 use Symfony\Component\Serializer\SerializerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -17,18 +16,14 @@ class KafkaService
         private SerializerInterface $serializer,
         private LoggerInterface $logger,
     ) {
-        $this->brokers = $_ENV['KAFKA_BROKERS'] ?? 'kafka:9092';
+        $this->brokers = $_ENV['ENQUEUE_DSN'] ?? 'rdkafka://kafka:9092';
     }
 
     private function getContext(): Context
     {
         if ($this->context === null) {
             try {
-                $factory = new RdKafkaConnectionFactory([
-                    'global' => [
-                        'bootstrap.servers' => $this->brokers,
-                    ],
-                ]);
+                $factory = new \Enqueue\RdKafka\RdKafkaConnectionFactory($this->brokers);
                 $this->context = $factory->createContext();
                 $this->logger->info('Kafka context initialized', ['brokers' => $this->brokers]);
             } catch (\Exception $e) {
@@ -62,6 +57,25 @@ class KafkaService
                 'topic' => $topic,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    public function consume(string $topicName, callable $callback): void
+    {
+        $context = $this->getContext();
+        $topic = $context->createTopic($topicName);
+        
+        $queue = $context->createQueue($topicName);
+        $consumer = $context->createConsumer($queue);
+
+        $this->logger->info('Starting Kafka consumer on topic: ' . $topicName);
+
+        while (true) {
+            if ($message = $consumer->receive()) {
+                $payload = json_decode($message->getBody(), true);
+                $callback($payload);
+                $consumer->acknowledge($message);
+            }
         }
     }
 

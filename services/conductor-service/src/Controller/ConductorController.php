@@ -6,6 +6,7 @@ use App\Entity\Conductor;
 use App\Entity\ConductorVehicleAssignment;
 use App\Repository\ConductorRepository;
 use App\Repository\ConductorVehicleAssignmentRepository;
+use App\Service\KafkaService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -153,7 +154,7 @@ class ConductorController extends AbstractController
     }
 
     #[Route('/{conductorId}/assign-vehicle', name: 'conductor_assign_vehicle', methods: ['POST'])]
-    public function assignVehicle(string $conductorId, Request $request): JsonResponse
+    public function assignVehicle(string $conductorId, Request $request, KafkaService $kafka): JsonResponse
     {
         $roleCheck = $this->canUpdate($request);
         if ($roleCheck instanceof JsonResponse) {
@@ -196,11 +197,18 @@ class ConductorController extends AbstractController
         $this->em->persist($assignment);
         $this->em->flush();
 
+        $kafka->publishEvent('driver.assigned', [
+            'conductor_id' => $conductorId,
+            'vehicle_id' => $vehicleId,
+            'event_type' => 'VEHICLE_ASSIGNED',
+            'timestamp' => time()
+        ]);
+
         return $this->json($this->serializeAssignment($assignment), 201);
     }
 
     #[Route('/assignments/{assignmentId}/unassign', name: 'conductor_unassign_vehicle', methods: ['POST'])]
-    public function unassignVehicle(string $assignmentId, Request $request): JsonResponse
+    public function unassignVehicle(string $assignmentId, Request $request, KafkaService $kafka): JsonResponse
     {
         $roleCheck = $this->canUpdate($request);
         if ($roleCheck instanceof JsonResponse) {
@@ -216,6 +224,12 @@ class ConductorController extends AbstractController
         $assignment->setUnassignedAt(new \DateTimeImmutable());
 
         $this->em->flush();
+
+        $kafka->publishEvent('driver.assigned', [
+            'vehicle_id' => $assignment->getVehicleId(),
+            'event_type' => 'VEHICLE_UNASSIGNED',
+            'timestamp' => time()
+        ]);
 
         return $this->json($this->serializeAssignment($assignment));
     }

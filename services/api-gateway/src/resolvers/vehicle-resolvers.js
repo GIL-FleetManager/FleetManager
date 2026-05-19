@@ -20,7 +20,21 @@ const vehicleResolvers = {
             headers: { Authorization: getAuthHeader(context) },
           },
         );
-        return res.data.member || res.data["hydra:member"] || res.data;
+
+        const rawData =
+          res.data["hydra:member"] ||
+          res.data.member ||
+          (Array.isArray(res.data) ? res.data : []);
+
+        return rawData.map((item) => {
+          return {
+            ...item,
+            id: item.id || (item["@id"] ? item["@id"].split("/").pop() : null),
+            marque: item.marque || "Inconnu",
+            modele: item.modele || "Inconnu",
+            statut: item.statut || "disponible",
+          };
+        });
       } catch (error) {
         console.error(
           "Vehicle Service Error:",
@@ -51,15 +65,32 @@ const vehicleResolvers = {
     },
   },
   Vehicule: {
-    location: async (parent) => {
+    statut: async (vehicule) => {
       try {
-        return await localizationResolvers.Query.getLastLocation(null, {
-          vehicleId: parent.id,
-        });
+        const maintenance = await axios.get(
+          `${process.env.MAINTENANCE_SERVICE_URL}/vehicule/${vehicule.id}/status`,
+          { timeout: 1000 },
+        );
+        if (maintenance.data?.en_panne) return "en_panne";
+
+        const mission = await axios.get(
+          `${process.env.CONDUCTOR_SERVICE_URL}/vehicule/${vehicule.id}/assignment`,
+          { timeout: 1000 },
+        );
+        console.log(
+          `DEBUG: Statut assignation pour ${vehicule.id} ->`,
+          mission.data,
+        );
+        if (mission.data?.assigne) return "en_mission";
+
+        return vehicule.statut;
       } catch (error) {
-        console.error("Erreur récupération location:", error);
-        return null;
+        console.warn(`Fallback statut pour ${vehicule.id}:`, error.message);
+        return vehicule.statut;
       }
+    },
+    location: async (vehicule) => {
+      return await localizationResolvers.Vehicule.location(vehicule);
     },
   },
   Mutation: {

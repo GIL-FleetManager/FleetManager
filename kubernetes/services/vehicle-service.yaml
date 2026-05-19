@@ -55,3 +55,35 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vehicle-kafka-consumer
+  namespace: fleet-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vehicle-kafka-consumer
+  template:
+    metadata:
+      labels:
+        app: vehicle-kafka-consumer
+    spec:
+      containers:
+        - name: kafka-consumer
+          image: fleetmanager-vehicle-service:latest 
+          imagePullPolicy: Never
+          command: ["php", "bin/console", "app:kafka-consume-driver"]
+          envFrom:
+            - configMapRef:
+                name: global-fleet-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fleet-db-postgresql
+                  key: postgres-password
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASSWORD)@fleet-db-postgresql.database.svc.cluster.local:5432/vehicle_db?serverVersion=16.0.0"
