@@ -1,4 +1,4 @@
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
   name: fleet-kafka-pool
@@ -11,9 +11,11 @@ spec:
     - controller
     - broker
   storage:
-    type: ephemeral
+    type: persistent-claim
+    size: 10Gi
+    deleteClaim: false
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
   name: fleet-kafka

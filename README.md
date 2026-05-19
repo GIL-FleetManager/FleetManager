@@ -2,14 +2,12 @@
 
 Microservices platform for fleet management — vehicles, drivers, maintenance, and GPS tracking.
 
-
 ## Prerequisites
 
 - Docker + Minikube
 - kubectl
 - Helm v3
 - Node.js 18+
-
 
 ## Deployment
 
@@ -85,6 +83,12 @@ kubectl exec -it deploy/conductor-service -n fleet-manager -- \
 kubectl exec -it deploy/maintenance-service -n fleet-manager -- \
   php bin/console doctrine:migrations:migrate --no-interaction
 ```
+
+kubectl exec -it deploy/vehicle-service -n fleet-manager -- php bin/console doctrine:schema:drop --force --full-database
+
+kubectl exec -it deploy/conductor-service -n fleet-manager -- php bin/console doctrine:schema:drop --force --full-database
+
+kubectl exec -it deploy/maintenance-service -n fleet-manager -- php bin/console doctrine:schema:drop --force --full-database
 
 ---
 
@@ -192,4 +196,3 @@ Pass the token in GraphQL requests:
 ```
 Authorization: Bearer <access_token>
 ```
-

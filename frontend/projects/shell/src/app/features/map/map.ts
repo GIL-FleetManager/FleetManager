@@ -74,6 +74,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   private updateMarkers(vehicles: any[]): void {
+    console.log('Véhicules reçus :', vehicles);
     vehicles.forEach((v) => {
       if (!v.location) return;
 

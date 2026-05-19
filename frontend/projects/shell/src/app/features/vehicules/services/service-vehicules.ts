@@ -32,6 +32,7 @@ export class ServiceVehicules {
             }
           }
         `,
+        fetchPolicy: 'network-only',
       })
       .valueChanges.pipe(
         map((res) =>

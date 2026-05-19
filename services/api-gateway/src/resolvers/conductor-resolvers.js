@@ -2,27 +2,26 @@ const axios = require("axios");
 
 const CONDUCTOR_API = `${process.env.CONDUCTOR_SERVICE_URL}/api/conductors`;
 
+const getAuthHeader = (context) => {
+  if (context?.rawToken) return context.rawToken;
+  if (context?.token) return context.token;
+  if (context?.req?.headers?.authorization)
+    return context.req.headers.authorization;
+  if (context?.headers?.authorization) return context.headers.authorization;
+  return "";
+};
+
 const conducteurResolvers = {
   Query: {
-    conducteurs: async () => {
+    conducteurs: async (_, __, context) => {
       try {
-        console.log(
-          "🔍 [ENV] CONDUCTOR_SERVICE_URL:",
-          process.env.CONDUCTOR_SERVICE_URL,
-        );
-        console.log("🔍 [ENV] CONDUCTOR_API:", CONDUCTOR_API);
-
-        const res = await axios.get(CONDUCTOR_API);
-        console.log("[GET] Status:", res.status);
-        console.log("[GET] Raw response:", JSON.stringify(res.data, null, 2));
+        const res = await axios.get(CONDUCTOR_API, {
+          headers: { Authorization: getAuthHeader(context) },
+        });
 
         const data = res.data["hydra:member"] || res.data.member || res.data;
 
-        console.log("[GET] First item raw:", JSON.stringify(data[0], null, 2));
-
         return data.map((d) => {
-          console.log("[MAP] item keys:", Object.keys(d));
-          console.log("[MAP] item:", JSON.stringify(d, null, 2));
           return {
             id: d.id,
             nom: d.nom,
@@ -39,9 +38,11 @@ const conducteurResolvers = {
         throw new Error("Could not fetch conducteurs list");
       }
     },
-    getConducteur: async (_, { id }) => {
+    getConducteur: async (_, { id }, context) => {
       try {
-        const res = await axios.get(`${CONDUCTOR_API}/${id}`);
+        const res = await axios.get(`${CONDUCTOR_API}/${id}`, {
+          headers: { Authorization: getAuthHeader(context) },
+        });
         const d = res.data;
         return {
           ...d,
@@ -55,8 +56,7 @@ const conducteurResolvers = {
     },
   },
   Mutation: {
-    createConducteur: async (_, args) => {
-      console.log("[CREATE] Variables envoyées à Symfony :", args);
+    createConducteur: async (_, args, context) => {
       try {
         const res = await axios({
           method: "post",
@@ -64,17 +64,19 @@ const conducteurResolvers = {
           headers: {
             "Content-Type": "application/ld+json",
             Accept: "application/ld+json",
+            Authorization: getAuthHeader(context),
           },
           data: args,
         });
-
-        console.log("[CREATE] Réponse brute de Symfony :", res.data);
 
         const id = res.data.id;
         const full = await axios({
           method: "get",
           url: `${CONDUCTOR_API}/${id}`,
-          headers: { Accept: "application/ld+json" },
+          headers: {
+            Accept: "application/ld+json",
+            Authorization: getAuthHeader(context),
+          },
         });
 
         return {
@@ -99,7 +101,7 @@ const conducteurResolvers = {
         );
       }
     },
-    updateConducteur: async (_, args) => {
+    updateConducteur: async (_, args, context) => {
       const { id, ...payload } = args;
       try {
         const res = await axios({
@@ -108,6 +110,7 @@ const conducteurResolvers = {
           headers: {
             "Content-Type": "application/merge-patch+json",
             Accept: "application/ld+json",
+            Authorization: getAuthHeader(context),
           },
           data: payload,
         });
@@ -130,11 +133,12 @@ const conducteurResolvers = {
         throw new Error("Could not update conducteur");
       }
     },
-    deleteConducteur: async (_, { id }) => {
+    deleteConducteur: async (_, { id }, context) => {
       try {
         await axios({
           method: "delete",
           url: `${CONDUCTOR_API}/${id}`,
+          headers: { Authorization: getAuthHeader(context) },
         });
         return true;
       } catch (error) {
@@ -162,7 +166,7 @@ const conducteurResolvers = {
             unassign_previous: unassign_previous ?? true,
           },
           headers: {
-            Authorization: context.rawToken,
+            Authorization: getAuthHeader(context),
             "Content-Type": "application/json",
             Accept: "application/ld+json",
           },
@@ -194,7 +198,7 @@ const conducteurResolvers = {
           method: "post",
           url: `${CONDUCTOR_API}/assignments/${assignment_id}/unassign`,
           headers: {
-            Authorization: context.rawToken,
+            Authorization: getAuthHeader(context),
             "Content-Type": "application/json",
             Accept: "application/ld+json",
           },

@@ -1,8 +1,7 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-// Assurez-vous que votre service exporte bien l'interface "Vehicule" avec les attributs en français
-import { ServiceVehicules, Vehicule } from './services/service-vehicules'; 
+import { ServiceVehicules, Vehicule } from './services/service-vehicules';
 import { Subscription } from 'rxjs';
 
 type ModalMode = 'create' | 'edit' | null;
@@ -30,7 +29,12 @@ export class Vehicules implements OnInit, OnDestroy {
   toast = signal<{ msg: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
   // Initialisation du formulaire avec les clés en français
-  form: Omit<Vehicule, 'id'> = { immatriculation: '', marque: '', modele: '', statut: 'disponible' };
+  form: Omit<Vehicule, 'id'> = {
+    immatriculation: '',
+    marque: '',
+    modele: '',
+    statut: 'disponible',
+  };
   editingId: string | null = null;
 
   statuts: Vehicule['statut'][] = ['disponible', 'en_mission', 'en_panne', 'en_maintenance'];

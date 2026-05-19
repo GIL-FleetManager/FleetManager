@@ -1,4 +1,4 @@
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: driver.assigned
@@ -12,7 +12,7 @@ spec:
     retention.ms: 7200000
     segment.bytes: 1073741824
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: vehicle.updated
@@ -26,7 +26,7 @@ spec:
     retention.ms: 7200000
     segment.bytes: 1073741824
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: maintenance.alert
@@ -40,7 +40,7 @@ spec:
     retention.ms: 7200000
     segment.bytes: 1073741824
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: geofence.alert
@@ -54,7 +54,7 @@ spec:
     retention.ms: 7200000
     segment.bytes: 1073741824
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: fleet.vehicle.status
@@ -68,7 +68,7 @@ spec:
     retention.ms: 7200000
     segment.bytes: 1073741824
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: fleet.location.raw
@@ -82,7 +82,7 @@ spec:
     retention.ms: 7200000
     segment.bytes: 1073741824
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: fleet.maintenance.alerts
@@ -96,7 +96,7 @@ spec:
     retention.ms: 7200000
     segment.bytes: 1073741824
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: fleet.system.logs
